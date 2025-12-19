@@ -11,3 +11,6 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
+#keep local for now, need more testing
+ingestion
+docker-compose.yml

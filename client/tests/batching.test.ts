@@ -109,6 +109,7 @@ describe('EventBatcher', () => {
       batcher.add(event1);
       batcher.add(event2);
       batcher.add(event3);
+      batcher.stop();
 
       // Need to wait longer for retries with backoff
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -135,6 +136,32 @@ describe('EventBatcher', () => {
       // Should have retried
       expect(mockSendFunction).toHaveBeenCalled();
     });
+
+    it('should respect batch retry options for attempt count', async () => {
+      batcher.stop();
+      const localSend = jest.fn().mockResolvedValue(false);
+      const configuredBatcher = new EventBatcher(
+        {
+          ...config,
+          enableLocalBuffer: false,
+          batchRetryOptions: {
+            maxRetries: 5,
+            delayMs: 10,
+          },
+        },
+        localSend
+      );
+
+      configuredBatcher.add(createMockEvent('c1'));
+      configuredBatcher.add(createMockEvent('c2'));
+      configuredBatcher.add(createMockEvent('c3'));
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      expect(localSend).toHaveBeenCalledTimes(5);
+
+      configuredBatcher.stop();
+    }, 10000);
   });
 
       it('should allow events with different request_ids', () => {

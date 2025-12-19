@@ -15,6 +15,9 @@ const TIMEOUT_MS = 5000;
 const MAX_RETRIES = 3;
 const CIRCUIT_THRESHOLD = 5;  
 const CIRCUIT_RESET_MS = 30000;  
+const BASE_DELAY_MS = 100;
+const MAX_DELAY_MS = 5000;
+const JITTER_MS = 100;
 
 /**
  * Result of a send operation
@@ -45,7 +48,11 @@ export function createSender(config: AutoTraceConfig): (events: TelemetryEvent[]
   const circuitThreshold = CIRCUIT_THRESHOLD;
   const circuitResetMs = CIRCUIT_RESET_MS;
   const timeoutMs = TIMEOUT_MS;
-  const maxRetries = MAX_RETRIES;
+  const retryOptions = config.retryOptions || {};
+  const maxRetries = sanitizePositiveNumber(retryOptions.maxRetries, MAX_RETRIES);
+  const baseDelayMs = sanitizePositiveNumber(retryOptions.baseDelayMs, BASE_DELAY_MS);
+  const maxDelayMs = sanitizePositiveNumber(retryOptions.maxDelayMs, MAX_DELAY_MS);
+  const jitterMs = sanitizeNonNegativeNumber(retryOptions.jitterMs, JITTER_MS);
 
   if (!runtimeFetch && config.debug) {
     console.warn('AutoTrace: global fetch is not available. Telemetry events cannot be sent.');
@@ -87,7 +94,7 @@ export function createSender(config: AutoTraceConfig): (events: TelemetryEvent[]
       }
 
       if (attempt < maxRetries) {
-        const delay = calculateBackoffDelay(attempt);
+        const delay = calculateBackoffDelay(attempt, baseDelayMs, maxDelayMs, jitterMs);
         await sleep(delay);
       }
     }
@@ -221,13 +228,14 @@ function updateCircuitState(
 
 function calculateBackoffDelay(
   attempt: number,
-  baseDelayMs: number = 100,
-  maxDelayMs: number = 5000
+  baseDelayMs: number = BASE_DELAY_MS,
+  maxDelayMs: number = MAX_DELAY_MS,
+  jitterMs: number = JITTER_MS
 ): number {
   //Calculations here are conventional; we can tune them later
   const exponentialDelay = baseDelayMs * Math.pow(2, attempt);
   const cappedDelay = Math.min(exponentialDelay, maxDelayMs);
-  const jitter = Math.random() * 100;
+  const jitter = Math.random() * jitterMs;
   return cappedDelay + jitter;
 }
 
@@ -240,4 +248,21 @@ function sleep(ms: number): Promise<void> {
  */
 function createInitialCircuitState(): CircuitBreakerState {
   return { state: 'CLOSED', failureCount: 0, lastFailureTime: null, successCount: 0};
+}
+
+function sanitizePositiveNumber(value: number | undefined, fallback: number): number {
+  if (typeof value === 'number' && value > 0) {
+    return value;
+  }
+  return fallback;
+}
+
+/*
+* For the case of 0
+*/
+function sanitizeNonNegativeNumber(value: number | undefined, fallback: number): number {
+  if (typeof value === 'number' && value >= 0) {
+    return value;
+  }
+  return fallback;
 }

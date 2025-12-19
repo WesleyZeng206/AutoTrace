@@ -26,11 +26,29 @@ export interface TelemetryEvent {
   /** Type of error if the request failed */
   error_type?: string;
 
-  /** Error message for humans to read */
+  /** OPtional error message for humans to read */
   error_message?: string;
 
   /** Additional metadata, including user_id, custom fields, etc. */
   metadata?: Record<string, any>;
+}
+
+export interface RetryOptions {
+  /** Maximum retry attempts for HTTP sender */
+  maxRetries?: number;
+  /** Base delay for exponential backoff (in milliseconds) */
+  baseDelayMs?: number;
+  /** Limit for exponential backoff (in milliseconds) */
+  maxDelayMs?: number;
+  /** Optional jitter value added to each delay */
+  jitterMs?: number;
+}
+
+export interface BatchRetryOptions {
+  /** Maximum retry attempts when flushing queued events */
+  maxRetries?: number;
+  /** Delay between retry attempts while flushing (in milliseconds) */
+  delayMs?: number;
 }
 
 /**
@@ -57,4 +75,10 @@ export interface AutoTraceConfig {
 
   /** Buffer events locally if ingestion service is down. True by default */
   enableLocalBuffer?: boolean;
+
+  /** Customize retry behavior for the HTTP sender */
+  retryOptions?: RetryOptions;
+
+  /** Customize retry behavior for batch flushing */
+  batchRetryOptions?: BatchRetryOptions;
 }

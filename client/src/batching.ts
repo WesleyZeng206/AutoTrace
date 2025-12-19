@@ -24,6 +24,7 @@ export class EventBatcher {
   private sendFunction: (events: TelemetryEvent[]) => Promise<boolean>;
 
   private maxRetries: number = 3;
+  private retryDelayMs: number = 500;
 
   // Concurrent flush protection
   private isFlushing: boolean = false;
@@ -46,6 +47,13 @@ export class EventBatcher {
     this.batchInterval = config.batchInterval || 5000;
     this.sendFunction = sendFunction;
     this.enableLocalBuffer = config.enableLocalBuffer !== false;
+    const batchRetry = config.batchRetryOptions || {};
+    if (typeof batchRetry.maxRetries === 'number' && batchRetry.maxRetries > 0) {
+      this.maxRetries = batchRetry.maxRetries;
+    }
+    if (typeof batchRetry.delayMs === 'number' && batchRetry.delayMs > 0) {
+      this.retryDelayMs = batchRetry.delayMs;
+    }
 
     this.startTimer();
   }
@@ -114,7 +122,7 @@ export class EventBatcher {
             if (this.config.debug) {
               console.log(`AutoTrace: Send failed, retrying (${attempt}/${this.maxRetries})`);
             }
-            await this.sleep(500);
+            await this.sleep(this.retryDelayMs);
           }
         } catch (error) {
           if (this.config.debug) {
@@ -122,7 +130,7 @@ export class EventBatcher {
           }
 
           if (attempt < this.maxRetries) {
-            await this.sleep(500);
+            await this.sleep(this.retryDelayMs);
           }
         }
       }

@@ -191,6 +191,23 @@ describe('HTTP Sender', () => {
       expect(result).toBe(false);
       expect(mockFetch).toHaveBeenCalledTimes(3); // Max retries
     }, 10000);
+
+    it('should respect custom retry options for max retries', async () => {
+      mockFetch.mockResolvedValue({ ok: false, status: 500, statusText: 'Error',
+      } as Response);
+
+      const sender = createSender({ ...config,
+        retryOptions: {
+          maxRetries: 5,
+        },
+      });
+
+      const events = [createMockEvent()];
+      const result = await sender(events);
+
+      expect(result).toBe(false);
+      expect(mockFetch).toHaveBeenCalledTimes(5);
+    }, 10000);
   });
 
   describe('Circuit breaker', () => {
