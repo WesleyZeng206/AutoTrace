@@ -3,3 +3,11 @@ future.md
 xd.txt
 .env
 node_modules/
+coverage/
+dist/
+*.tsbuildinfo
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+

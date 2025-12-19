@@ -36,11 +36,11 @@ export interface TelemetryEvent {
 /**
  * Configuration options for th instrumentation middleware
  */
-export interface AIPConfig {
+export interface AutoTraceConfig {
   /** Name of the service (used to identify in dashboard) */
   serviceName: string;
 
-  /** URL of the AIP ingestion service endpoint */
+  /** URL of the AutoTrace ingestion service endpoint */
   ingestionUrl: string;
 
   /** Optional API key for authentication with the ingestion service */
@@ -52,9 +52,9 @@ export interface AIPConfig {
   /** Max time in milliseconds to wait before flushing batch */
   batchInterval?: number;
 
-  /** Enable debug logging to console (default: false) */
+  /** Enable debug logging to console. Default value is false */
   debug?: boolean;
 
-  /** Buffer events locally if ingestion service is down (default: true) */
+  /** Buffer events locally if ingestion service is down. True by default */
   enableLocalBuffer?: boolean;
 }

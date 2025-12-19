@@ -1,11 +1,11 @@
-import { TelemetryEvent, AIPConfig } from './types';
+import { TelemetryEvent, AutoTraceConfig } from './types';
 
 /**
  * EventBatcher collects events and groups them together
- *
+ * 
  * Batching rules:
- * - Flush when we have 10 events (or configured batch size)
- * - Flush every 5 seconds (or configured interval)
+ * - Flush when we have 10 events 
+ * - Flush every 5 seconds 
  * - Retry failed sends 3 times before giving up
  * - Prevents concurrent flushes to avoid race conditions
  * - Deduplicates events based on request_id (keeps last 1000 unique IDs)
@@ -15,11 +15,12 @@ export class EventBatcher {
   private queue: TelemetryEvent[] = [];
 
   private flushTimer: NodeJS.Timeout | null = null;
-  private config: AIPConfig;
+  private config: AutoTraceConfig;
   private batchSize: number;
   private batchInterval: number;
+  private enableLocalBuffer: boolean;
 
-  //dependency injection (function provided by middleware)
+  //dependency injection 
   private sendFunction: (events: TelemetryEvent[]) => Promise<boolean>;
 
   private maxRetries: number = 3;
@@ -27,20 +28,24 @@ export class EventBatcher {
   // Concurrent flush protection
   private isFlushing: boolean = false;
 
-  // Event deduplication set to keep track of recently processed request_ids
+  // Event "deduplication" set to keep track of recently processed request ids
   private recentRequestIds: Set<string> = new Set();
   private maxDedupeSize: number = 1000;
 
+  private failedEvents: TelemetryEvent[] = [];
+  private maxFailedEvents: number = 500;
+
   constructor(
-    config: AIPConfig, sendFunction: (events: TelemetryEvent[]) => Promise<boolean>
+    config: AutoTraceConfig, sendFunction: (events: TelemetryEvent[]) => Promise<boolean>
   ) {
     this.config = config;
 
-    //default to 10 for now, may change later
+    // default to 10 for now, unless someone overrides it somewhere up top
     this.batchSize = config.batchSize || 10;
     
     this.batchInterval = config.batchInterval || 5000;
     this.sendFunction = sendFunction;
+    this.enableLocalBuffer = config.enableLocalBuffer !== false;
 
     this.startTimer();
   }
@@ -49,10 +54,10 @@ export class EventBatcher {
    * Add an event to the queue
    */
   add(event: TelemetryEvent): void {
-    // Deduplication check
+    // Deduplication check 
     if (this.recentRequestIds.has(event.request_id)) {
       if (this.config.debug) {
-        console.log(`AIP: Skipping duplicate event with request_id: ${event.request_id}`);
+        console.log(`AutoTrace: Skipping duplicate event with request_id: ${event.request_id}`);
       }
       return;
     }
@@ -79,7 +84,7 @@ export class EventBatcher {
   private async autoFlush(): Promise<void> {
     if (this.isFlushing) {
       if (this.config.debug) {
-        console.log('AIP: Flush operation in progress, skipping');
+        console.log('AutoTrace: Flush operation in progress, skipping');
       }
       return;
     }
@@ -100,20 +105,20 @@ export class EventBatcher {
 
           if (successful) {
             if (this.config.debug) {
-              console.log(`AIP: Sent ${events.length} events`);
+              console.log(`AutoTrace: Sent ${events.length} events`);
             }
             break;
           }
 
           if (attempt < this.maxRetries) {
             if (this.config.debug) {
-              console.log(`AIP: Send failed, retrying (${attempt}/${this.maxRetries})`);
+              console.log(`AutoTrace: Send failed, retrying (${attempt}/${this.maxRetries})`);
             }
             await this.sleep(500);
           }
         } catch (error) {
           if (this.config.debug) {
-            console.error(`AIP: Send error on attempt ${attempt}:`, error);
+            console.error(`AutoTrace: Send error on attempt ${attempt}:`, error);
           }
 
           if (attempt < this.maxRetries) {
@@ -122,11 +127,22 @@ export class EventBatcher {
         }
       }
 
-      if (!successful && this.config.debug) {
-        console.warn(`AIP: Failed to send ${events.length} events after ${this.maxRetries} attempts`);
+      if (!successful) {
+        if (this.enableLocalBuffer) {
+          if (this.failedEvents.length < this.maxFailedEvents) {
+            this.failedEvents.push(...events);
+            if (this.config.debug) {
+              console.warn(`AutoTrace: Failed to send ${events.length} events, saved ${this.failedEvents.length} total failed events`);
+            }
+          } else if (this.config.debug) {
+            console.warn(`AutoTrace: Failed to send ${events.length} events and failedEvents queue is full`);
+          }
+        } else {
+          console.warn(`AutoTrace: Dropping ${events.length} events because local buffering is disabled`);
+        }
       }
     } finally {
-      // Always reset the flushing flag at the end
+      // Always reset the flushing flag at the end 
       this.isFlushing = false;
     }
   }
@@ -153,11 +169,40 @@ export class EventBatcher {
   private startTimer(): void {
     this.flushTimer = setInterval(() => {
       this.autoFlush();
+      if (this.enableLocalBuffer) {
+        this.retryFailedEvents();
+      }
     }, this.batchInterval);
   }
 
+  private async retryFailedEvents(): Promise<void> {
+    if (!this.enableLocalBuffer || this.failedEvents.length === 0 || this.isFlushing) {
+      return;
+    }
+
+    const eventsToRetry = this.failedEvents.splice(0, this.batchSize);
+
+    if (this.config.debug) {
+      console.log(`AutoTrace: Retrying ${eventsToRetry.length} failed events`);
+    }
+
+    this.isFlushing = true;
+    try {
+      const successful = await this.sendFunction(eventsToRetry);
+
+      if (!successful) {
+        this.failedEvents.push(...eventsToRetry);
+      }
+      
+    } catch (error) {
+      this.failedEvents.push(...eventsToRetry);
+    } finally {
+      this.isFlushing = false;
+    }
+  }
+
   /**
-   * Stop the batcher
+   * Stop the batcher 
    */
   stop(): void {
     if (this.flushTimer) {
@@ -166,6 +211,5 @@ export class EventBatcher {
     }
   }
 
-  getQueueSize(): number {
-    return this.queue.length;  }
+  getQueueSize(): number { return this.queue.length;  }
 }

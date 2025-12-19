@@ -1,5 +1,11 @@
 
-import { TelemetryEvent, AIPConfig } from './types';
+import { TelemetryEvent, AutoTraceConfig } from './types';
+
+type FetchFn = (input: string, init?: any) => Promise<Response>;
+
+// Works with older versions of Node that don't have [fetch]
+const runtimeFetch: FetchFn | undefined = typeof (globalThis as any).fetch === 'function'
+  ? ((globalThis as any).fetch as FetchFn).bind(globalThis) : undefined;
 
 // Possible circuit breaker states
 type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
@@ -32,23 +38,31 @@ interface CircuitBreakerState {
 
 /**
  * Creates a sender function that can be passed to the EventBatcher
- * Sender function returns a promise of a boolean 
+ * Sender function returns a promise of a boolean
  */
-export function createSender(config: AIPConfig): (events: TelemetryEvent[]) => Promise<boolean> {
+export function createSender(config: AutoTraceConfig): (events: TelemetryEvent[]) => Promise<boolean> {
   let circuitState = createInitialCircuitState();
   const circuitThreshold = CIRCUIT_THRESHOLD;
   const circuitResetMs = CIRCUIT_RESET_MS;
   const timeoutMs = TIMEOUT_MS;
   const maxRetries = MAX_RETRIES;
 
+  if (!runtimeFetch && config.debug) {
+    console.warn('AutoTrace: global fetch is not available. Telemetry events cannot be sent.');
+  }
+
   return async (events: TelemetryEvent[]): Promise<boolean> => {
     if (events.length === 0) {
       return true;
     }
 
+    if (!runtimeFetch) {
+      return false;
+    }
+
     if (!shouldAllowRequest(circuitState, circuitResetMs)) {
       if (config.debug) {
-        console.log('AIP: Circuit breaker is open, rejecting the request');
+        console.log('AutoTrace: Circuit breaker is open, rejecting the request');
       }
       return false;
     }
@@ -58,18 +72,18 @@ export function createSender(config: AIPConfig): (events: TelemetryEvent[]) => P
     }
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      const result = await sendHttpRequest(config.ingestionUrl, events, config.apiKey, timeoutMs);
+      const result = await sendHttpRequest(config.ingestionUrl, events, config.apiKey, timeoutMs, runtimeFetch);
 
       if (result.success) {
         circuitState = updateCircuitState(circuitState, true, circuitThreshold);
         if (config.debug) {
-          console.log(`AIP: Successfully sent ${events.length} events`);
+          console.log(`AutoTrace: Successfully sent ${events.length} events`);
         }
         return true;
       }
 
       if (config.debug) {
-        console.log(`AIP: Send attempt ${attempt}/${maxRetries} failed: ${result.error}`);
+        console.log(`AutoTrace: Send attempt ${attempt}/${maxRetries} failed: ${result.error}`);
       }
 
       if (attempt < maxRetries) {
@@ -86,9 +100,13 @@ export function createSender(config: AIPConfig): (events: TelemetryEvent[]) => P
 async function sendHttpRequest(
   url: string,
   events: TelemetryEvent[],
-  apiKey?: string,
-  timeoutMs: number = TIMEOUT_MS
-): Promise<SendResult> {
+  apiKey: string | undefined,
+  timeoutMs: number = TIMEOUT_MS,
+  fetchFn: FetchFn | undefined): Promise<SendResult> {
+  if (!fetchFn) {
+    return { success: false, error: 'fetch_not_available' };
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -101,7 +119,7 @@ async function sendHttpRequest(
       headers['API_Key'] = apiKey;
     }
 
-    const response = await fetch(url, {
+    const response = await fetchFn(url, {
       method: 'POST',
       headers,
       body: JSON.stringify({ events }),
@@ -195,12 +213,7 @@ function updateCircuitState(
   }
 
   if (state.state === 'HALF_OPEN') {
-    return {
-      state: 'OPEN',
-      failureCount: state.failureCount + 1,
-      lastFailureTime: Date.now(),
-      successCount: 0,
-    };
+    return { state: 'OPEN', failureCount: state.failureCount + 1, lastFailureTime: Date.now(), successCount: 0,};
   }
 
   return { ...state, lastFailureTime: Date.now() };
@@ -223,13 +236,8 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * A default Circuit State creator
+ * Default Circuit State creator
  */
 function createInitialCircuitState(): CircuitBreakerState {
-  return {
-    state: 'CLOSED',
-    failureCount: 0,
-    lastFailureTime: null,
-    successCount: 0
-  };
+  return { state: 'CLOSED', failureCount: 0, lastFailureTime: null, successCount: 0};
 }

@@ -1,5 +1,5 @@
 {
-  "name": "aip-client",
+  "name": "autotrace",
   "version": "0.1.0",
   "description": "A lightweight instrumentation middleware for Express.js services",
   "main": "dist/index.js",
