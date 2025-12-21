@@ -123,7 +123,7 @@ async function sendHttpRequest(
     };
 
     if (apiKey) {
-      headers['API_Key'] = apiKey;
+      headers['x-api-key'] = apiKey;
     }
 
     const response = await fetchFn(url, {

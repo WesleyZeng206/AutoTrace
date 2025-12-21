@@ -83,7 +83,7 @@ describe('HTTP Sender', () => {
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
-            'API_Key': 'secret-key',
+            'x-api-key': 'secret-key',
           }),
         })
       );
