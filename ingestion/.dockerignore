@@ -1,0 +1,5 @@
+dist
+npm-debug.log
+*.md
+node_modules
+README.md

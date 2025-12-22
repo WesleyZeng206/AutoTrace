@@ -1,4 +1,4 @@
-export declare module '@autotrace/telemetry' {
+declare module '@autotrace/telemetry' {
   export interface TelemetryEvent {
   /** Unique identifier for the request; uses UUID */
   request_id: string;
