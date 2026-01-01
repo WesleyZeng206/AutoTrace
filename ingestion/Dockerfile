@@ -1,15 +1,16 @@
 #builder stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY ingestion/package*.json ./
 RUN npm ci
-COPY . .
+COPY ingestion ./
+COPY shared ../shared
 RUN npm run build
 
 #runtime stage
-FROM node:18-alpine
+FROM node:20-alpine
 WORKDIR /app
-COPY package*.json ./
+COPY ingestion/package*.json ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 EXPOSE 4000

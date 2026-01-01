@@ -1,0 +1,89 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: autotrace-db-prod
+    env_file:
+      - .env.production
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-autotrace}
+      POSTGRES_USER: ${POSTGRES_USER:-autotrace_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./ingestion/src/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./ingestion/src/db/migrations:/docker-entrypoint-initdb.d/migrations
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autotrace_user} -d ${POSTGRES_DB:-autotrace}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - autotrace-network-prod
+    restart: always
+    user: postgres
+
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: ./ingestion/Dockerfile
+    container_name: autotrace-ingestion-prod
+    env_file:
+      - .env.production
+    ports:
+      - "4000:4000"
+    environment:
+      # Internal Docker network doesn't need SSL
+      DATABASE_URL: postgresql://${POSTGRES_USER:-autotrace_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-autotrace}?sslmode=disable
+      PORT: 4000
+      NODE_ENV: production
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?ALLOWED_ORIGINS is required}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required - must be 32+ characters}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      SESSION_DURATION_DAYS: ${SESSION_DURATION_DAYS:-7}
+      RATE_LIMIT_REQUESTS: ${RATE_LIMIT_REQUESTS:-500}
+      TELEMETRY_RATE_LIMIT: ${TELEMETRY_RATE_LIMIT:-1000}
+      AGGREGATOR_ENABLED: ${AGGREGATOR_ENABLED:-true}
+      AGGREGATOR_INTERVAL: ${AGGREGATOR_INTERVAL:-1h}
+      AGGREGATOR_RUN_ON_STARTUP: ${AGGREGATOR_RUN_ON_STARTUP:-true}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - autotrace-network-prod
+    restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: ./dashboard/Dockerfile
+    container_name: autotrace-dashboard-prod
+    env_file:
+      - .env.production
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_INGESTION_URL: ${NEXT_PUBLIC_INGESTION_URL:-http://localhost:4000}
+      INTERNAL_INGESTION_URL: http://ingestion:4000
+      NODE_ENV: production
+    depends_on:
+      - ingestion
+    networks:
+      - autotrace-network-prod
+    restart: always
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
+
+volumes:
+  postgres_data_prod:
+    driver: local
+
+networks:
+  autotrace-network-prod:
+    driver: bridge

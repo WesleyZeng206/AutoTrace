@@ -16,6 +16,14 @@ jest.mock('../../services/storage', () => ({
   storageService: storageServiceMock
 }));
 
+jest.mock('../../middleware/auth', () => ({
+  requireAuth: () => (req: any, _res: any, next: any) => {
+    req.user = { id: 'user-1', email: 'user@example.com', username: 'user' };
+    req.teams = [{ id: 'team-1', name: 'Team 1', slug: 'team-1', role: 'owner' }];
+    next();
+  }
+}));
+
 const { telemetryRouter } = require('../telemetry');
 
 const createTestApp = () => {
@@ -35,7 +43,7 @@ describe('GET /telemetry validation', () => {
   it('rejects invalid startTime format', async () => {
     const response = await request(createTestApp())
       .get('/telemetry')
-      .query({ startTime: 'not-a-date' });
+      .query({ startTime: 'not-a-date', teamId: 'team-1' });
 
     expect(response.status).toBe(400);
     expect(response.body.message).toContain('startTime');
@@ -45,7 +53,7 @@ describe('GET /telemetry validation', () => {
   it('rejects invalid endTime format', async () => {
     const response = await request(createTestApp())
       .get('/telemetry')
-      .query({ endTime: 'not-a-date' });
+      .query({ endTime: 'not-a-date', teamId: 'team-1' });
 
     expect(response.status).toBe(400);
     expect(response.body.message).toContain('endTime');
@@ -57,7 +65,8 @@ describe('GET /telemetry validation', () => {
       .get('/telemetry')
       .query({
         startTime: '2024-01-02T00:00:00.000Z',
-        endTime: '2024-01-01T00:00:00.000Z'
+        endTime: '2024-01-01T00:00:00.000Z',
+        teamId: 'team-1'
       });
 
     expect(response.status).toBe(400);
@@ -68,7 +77,7 @@ describe('GET /telemetry validation', () => {
   it('rejects invalid limit value', async () => {
     const response = await request(createTestApp())
       .get('/telemetry')
-      .query({ limit: '2001' });
+      .query({ limit: '2001', teamId: 'team-1' });
 
     expect(response.status).toBe(400);
     expect(response.body.message).toContain('limit');
@@ -78,7 +87,7 @@ describe('GET /telemetry validation', () => {
   it('rejects invalid offset value', async () => {
     const response = await request(createTestApp())
       .get('/telemetry')
-      .query({ offset: '-5' });
+      .query({ offset: '-5', teamId: 'team-1' });
 
     expect(response.status).toBe(400);
     expect(response.body.message).toContain('offset');
@@ -94,7 +103,8 @@ describe('GET /telemetry validation', () => {
         startTime: '2024-01-01T00:00:00.000Z',
         endTime: '2024-01-02T00:00:00.000Z',
         limit: '10',
-        offset: '5'
+        offset: '5',
+        teamId: 'team-1'
       });
 
     expect(response.status).toBe(200);
@@ -105,7 +115,8 @@ describe('GET /telemetry validation', () => {
       startTime: new Date('2024-01-01T00:00:00.000Z'),
       endTime: new Date('2024-01-02T00:00:00.000Z'),
       limit: 10,
-      offset: 5
+      offset: 5,
+      teamId: 'team-1'
     });
   });
 });

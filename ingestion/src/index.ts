@@ -1,57 +1,144 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { telemetryRouter } from './routes/telemetry';
 import { aggregatorRouter } from './routes/aggregator';
+import { servicesRouter } from './routes/services';
+import { metricsRouter } from './routes/metrics';
+import { statsRouter } from './routes/stats';
+import { routesRouter } from './routes/routes';
+import { distributionRouter } from './routes/distribution';
+import { createAuthRouter } from './routes/auth';
+import { createTeamsRouter } from './routes/teams';
+import { createApiKeysRouter } from './routes/apiKeys';
 import { storageService } from './services/storage';
 import { aggregatorService } from './services/aggregator';
+import {
+  authRateLimiter,
+  apiRateLimiter,
+  ipBlockingMiddleware,
+  requestSizeValidator,
+  maliciousPatternDetection,
+  securityHeaders,
+  securityLogger,
+} from './middleware/security';
 
 dotenv.config();
 
 const PORT = Number(process.env.PORT) || 4000;
 const app = express();
 
+// Trust proxy if configured (for accurate IP detection behind load balancers)
+if (process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1);
+  console.log('Trust proxy enabled - using X-Forwarded-For for IP detection');
+}
+
 const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? '')
   .split(',')
   .map(origin => origin.trim())
   .filter(Boolean);
 
-const corsOptions = allowedOrigins.length > 0 ? { origin: allowedOrigins, methods: ['GET', 'POST'], credentials: true } : { origin: '*', methods: ['GET', 'POST'], credentials: false };
+const corsOptions = allowedOrigins.length > 0
+  ? {
+      origin: allowedOrigins,
+      methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+      credentials: true,
+      maxAge: 600, // Cache preflight for 10 minutes
+    }
+  : {
+      origin: '*',
+      methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+      credentials: false
+    };
 
-const requestLimiter = rateLimit({ windowMs: 60_000, max: Math.max(1, Number(process.env.RATE_LIMIT_REQUESTS) || 100), standardHeaders: true, legacyHeaders: false });
+// Security middleware - order matters!
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+    },
+  },
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true,
+  },
+  frameguard: { action: 'deny' },
+  noSniff: true,
+  xssFilter: true,
+}));
 
-app.use(helmet());
-app.use(requestLimiter);
+app.use(securityHeaders);
+app.use(securityLogger);
+app.use(ipBlockingMiddleware);
+app.use(maliciousPatternDetection);
+app.use(requestSizeValidator);
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
+app.use(cookieParser());
 
 app.get('/health', async (_req, res) => {
   const dbHealthy = await storageService.healthCheck();
   res.status(dbHealthy ? 200 : 503).json({ status: dbHealthy ? 'ok' : 'degraded', timestamp: new Date().toISOString(), service: 'autotrace-ingestion', dependencies: { database: dbHealthy ? 'healthy' : 'unhealthy' } });
 });
 
+// Multi-tenant routes with appropriate rate limiting
+app.use('/auth', authRateLimiter, createAuthRouter(storageService.pool));
+app.use('/teams', apiRateLimiter, createTeamsRouter(storageService.pool));
+app.use('/api-keys', apiRateLimiter, createApiKeysRouter(storageService.pool));
+
+// Telemetry routes
 app.use('/telemetry', telemetryRouter);
 app.use('/aggregator', aggregatorRouter);
+app.use('/services', apiRateLimiter, servicesRouter);
+app.use('/metrics', apiRateLimiter, metricsRouter);
+app.use('/stats', apiRateLimiter, statsRouter);
+app.use('/routes', apiRateLimiter, routesRouter);
+app.use('/distribution', apiRateLimiter, distributionRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error', message: process.env.NODE_ENV === 'development' ? err.message : undefined });
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`AutoTrace ingestion listening on ${PORT}`);
+async function startServer() {
 
-  aggregatorService.start();
-});
+  if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
+    console.error('FATAL: SESSION_SECRET must be set and at least 32 characters long');
+    process.exit(1);
+  }
 
-const shutdown = (signal: string) => {
+  try {
+    await storageService.initialize();
+  } catch (error) {
+    console.error('FATAL: Failed to initialize database connection', error);
+    process.exit(1);
+  }
+
+  const server = app.listen(PORT, () => {
+    console.log(`AutoTrace ingestion listening on ${PORT}`);
+    aggregatorService.start();
+  });
+
+  return server;
+}
+
+const serverPromise = startServer();
+let server: ReturnType<typeof app.listen>;
+
+const shutdown = async (signal: string) => {
   console.log(`${signal} received. Draining connections...`);
 
   aggregatorService.stop();
 
-  server.close(async closeErr => {
+  const srv = await serverPromise;
+  srv.close(async closeErr => {
     if (closeErr) {
       console.error('HTTP server failed to close cleanly', closeErr);
     }

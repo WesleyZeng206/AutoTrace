@@ -1,0 +1,10 @@
+/node_modules
+/.next/
+/out/
+npm-debug.log*
+.env
+.env*.local
+*.tsbuildinfo
+/api latency dashboard
+next-env.d.ts
+/scripts

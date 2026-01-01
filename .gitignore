@@ -1,15 +1,22 @@
 secret.md
-future.md
+dev_guide.md
 xd.txt
 .env
+.env.local
+.env.production
+.env.development
+*.env.backup
 node_modules/
 coverage/
 dist/
+/scripts
 *.tsbuildinfo
 *.log
 npm-debug.log*
 .DS_Store
 Thumbs.db
-
-#keep local for now, need more testing
-docker-compose.yml
+.next/
+future.md
+out/
+tech_debt.md
+simple_test
