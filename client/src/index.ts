@@ -5,6 +5,8 @@
 
 export { createAutoTraceMiddleware, createAutoTraceErrorHandler } from './middleware';
 
-export type { TelemetryEvent, AutoTraceConfig } from './types';
+export type { TelemetryEvent, AutoTraceConfig, PersistentQueueOptions } from './types';
+
+export { PersistentQueue } from './persistence';
 
 

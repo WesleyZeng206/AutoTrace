@@ -1,4 +1,4 @@
-import { BarChart3, Clock, Code, Globe } from 'lucide-react';
+import { BarChart3, Clock, Code, Globe, ShieldCheck } from 'lucide-react';
 
 const features = [
   {
@@ -24,6 +24,12 @@ const features = [
     title: 'Team Collaboration',
     description: 'Multi-team support with role-based access. Manage projects and team members in one place.',
     highlight: 'Multi-tenant ready',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Offline Protected Telemetry',
+    description: 'Client SDK includes a persistent queue, automatic retries, and graceful drain-on-exit features so you never lose events during potential deploys or outages.',
+    highlight: 'Resilient ingestion',
   },
 ];
 

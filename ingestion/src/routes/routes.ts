@@ -67,14 +67,13 @@ routesRouter.get('/', requireAuth(storageService.pool), async (req: Request, res
     const historicalStartTime = startTime || fallbackStart;
 
     const windowDurationHours = (effectiveEnd.getTime() - historicalStartTime.getTime()) / (1000 * 60 * 60);
-    const useAggregates = windowDurationHours > 24; // Use aggregates for 24+ hour windows (more than 1 day)
+    const useAggregates = windowDurationHours > 168; // Use aggregates for windows longer than 7 days
 
     const params: any[] = [teamId, historicalStartTime.toISOString(), effectiveEnd.toISOString()];
     let paramIndex = 4;
     let sql: string;
 
     if (useAggregates) {
-      // Fast path: Use pre-computed hourly aggregates
       sql = `
         SELECT
           route,
@@ -92,7 +91,6 @@ routesRouter.get('/', requireAuth(storageService.pool), async (req: Request, res
           AND time_bucket <= date_trunc('hour', $3::timestamptz)
       `;
     } else {
-      // Slow path: Query raw data for recent/short time windows
       sql = `
         SELECT
           route,

@@ -62,11 +62,12 @@ export default function Documentation() {
           </div>
 
           <Tabs defaultValue="installation" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="installation">Installation</TabsTrigger>
               <TabsTrigger value="usage">Usage</TabsTrigger>
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="examples">Examples</TabsTrigger>
+              <TabsTrigger value="resilience">Resilience</TabsTrigger>
             </TabsList>
 
             {/* Installation Tab */}
@@ -190,6 +191,7 @@ app.listen(3000, () => {
                   </div>
                 </div>
               </Card>
+
 
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Error Handling</h2>
@@ -584,6 +586,40 @@ app.use(createAutoTraceMiddleware({
                     <li>Use HTTPS for ingestion URL in prod</li>
                     <li>Check dashboard regularly</li>
                     <li>Set retry limits so you don't overwhelm ingestion</li>
+                  </ul>
+                </div>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="resilience" className="space-y-4">
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Persistent Queue Configuration</h2>
+                <p className="text-muted-foreground mb-4">
+                  AutoTrace SDK can keep telemetry safe on disk whenever networks or deploys interrupt delivery. Enable it via <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">persistentQueue</code>.
+                </p>
+                <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
+                  <code>{`import { createAutoTraceMiddleware } from 'autotrace';
+
+app.use(createAutoTraceMiddleware({
+  serviceName: 'checkout-api',
+  ingestionUrl: process.env.AUTOTRACE_URL,
+  apiKey: process.env.AUTOTRACE_KEY,
+  persistentQueue: {
+    enabled: true,
+    queueDir: './.autotrace-queue',
+    maxQueueSize: 10000,     // trims oldest entries past this cap
+    persistInterval: 1000,   // ms between disk flushes
+    autoFlushOnExit: true    // drain buffer during shutdown
+  }
+}));`}</code>
+                </pre>
+                <div className="mt-4 space-y-2 text-sm text-muted-foreground">
+                  <p>Runtime behavior:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-4">
+                    <li>Events are appended to JSONL files per process ID.</li>
+                    <li>Oldest entries are dropped once <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">maxQueueSize</code> is reached.</li>
+                    <li>The queue replays automatically once ingestion responds again.</li>
+                    <li>Set <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">autoFlushOnExit</code> to false if you manage shutdown yourself.</li>
                   </ul>
                 </div>
               </Card>

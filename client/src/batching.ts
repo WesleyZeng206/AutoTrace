@@ -1,4 +1,5 @@
 import { TelemetryEvent, AutoTraceConfig } from './types';
+import { PersistentQueue } from './persistence';
 
 /**
  * EventBatcher collects events and groups them together
@@ -36,6 +37,11 @@ export class EventBatcher {
   private failedEvents: TelemetryEvent[] = [];
   private maxFailedEvents: number = 500;
 
+  // Persistent queue for offline resilience
+  private persistentQueue: PersistentQueue | null = null;
+  private consecutiveFailures: number = 0;
+  private lastRetryTime: number = 0;
+
   constructor(
     config: AutoTraceConfig, sendFunction: (events: TelemetryEvent[]) => Promise<boolean>
   ) {
@@ -53,6 +59,15 @@ export class EventBatcher {
     }
     if (typeof batchRetry.delayMs === 'number' && batchRetry.delayMs > 0) {
       this.retryDelayMs = batchRetry.delayMs;
+    }
+
+    // Initialize persistent queue if enabled
+    if (config.persistentQueue?.enabled) {
+      this.persistentQueue = new PersistentQueue(
+        config.persistentQueue,
+        config.debug || false
+      );
+      this.initializePersistentQueue();
     }
 
     this.startTimer();
@@ -142,6 +157,11 @@ export class EventBatcher {
             if (this.config.debug) {
               console.warn(`AutoTrace: Failed to send ${events.length} events, saved ${this.failedEvents.length} total failed events`);
             }
+
+            // Persist to disk if buffer is getting full
+            if (this.persistentQueue && this.failedEvents.length > 100) {
+              await this.persistToDisk();
+            }
           } else if (this.config.debug) {
             console.warn(`AutoTrace: Failed to send ${events.length} events and failedEvents queue is full`);
           }
@@ -188,10 +208,18 @@ export class EventBatcher {
       return;
     }
 
+    // Apply long-term backoff logic
+    const backoffDelay = this.calculateLongTermBackoff(this.consecutiveFailures);
+    if (this.lastRetryTime && Date.now() - this.lastRetryTime < backoffDelay) {
+      return; // Skip this cycle, waiting for backoff
+    }
+
+    this.lastRetryTime = Date.now();
+
     const eventsToRetry = this.failedEvents.splice(0, this.batchSize);
 
     if (this.config.debug) {
-      console.log(`AutoTrace: Retrying ${eventsToRetry.length} failed events`);
+      console.log(`AutoTrace: Retrying ${eventsToRetry.length} failed events (consecutive failures: ${this.consecutiveFailures})`);
     }
 
     this.isFlushing = true;
@@ -200,22 +228,153 @@ export class EventBatcher {
 
       if (!successful) {
         this.failedEvents.push(...eventsToRetry);
+        this.consecutiveFailures++;
+      } else {
+        this.consecutiveFailures = 0; // Reset on success
       }
-      
+
     } catch (error) {
       this.failedEvents.push(...eventsToRetry);
+      this.consecutiveFailures++;
     } finally {
       this.isFlushing = false;
     }
   }
 
   /**
-   * Stop the batcher 
+   * Stop the batcher
    */
   stop(): void {
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
       this.flushTimer = null;
+    }
+
+    // Gracefully shutdown persistent queue
+    if (this.persistentQueue) {
+      this.shutdown();
+    }
+  }
+
+  /**
+   * Initialize persistent queue and load any persisted events
+   */
+  private async initializePersistentQueue(): Promise<void> {
+    if (!this.persistentQueue) return;
+
+    try {
+      await this.persistentQueue.initialize();
+      const persisted = await this.persistentQueue.load();
+
+      if (persisted.length > 0) {
+        // Filter expired events
+        const valid = this.filterExpiredEvents(persisted);
+
+        // Add to failedEvents for retry
+        this.failedEvents.push(...valid);
+
+        // Rebuild recentRequestIds Set from loaded events
+        for (const event of valid) {
+          this.recentRequestIds.add(event.request_id);
+        }
+
+        // Trim dedupe set to maxDedupeSize
+        if (this.recentRequestIds.size > this.maxDedupeSize) {
+          const idsArray = Array.from(this.recentRequestIds);
+          this.recentRequestIds = new Set(idsArray.slice(-this.maxDedupeSize));
+        }
+
+        if (this.config.debug) {
+          console.log(`AutoTrace: Loaded ${valid.length} persisted events (${persisted.length - valid.length} expired)`);
+        }
+
+        // Clear disk queue after loading
+        await this.persistentQueue.clear();
+      }
+    } catch (error) {
+      if (this.config.debug) {
+        console.error('AutoTrace: Failed to initialize persistent queue:', error);
+      }
+      // Disable persistence on error
+      this.persistentQueue = null;
+    }
+  }
+
+  /**
+   * Persist failed events to disk
+   */
+  private async persistToDisk(): Promise<void> {
+    if (!this.persistentQueue) return;
+
+    try {
+      const toPersist = [...this.failedEvents];
+      await this.persistentQueue.persist(toPersist);
+
+      // Clear in-memory after successful persist
+      this.failedEvents = [];
+
+      if (this.config.debug) {
+        console.log(`AutoTrace: Persisted ${toPersist.length} events to disk`);
+      }
+    } catch (error) {
+      if (this.config.debug) {
+        console.error('AutoTrace: Failed to persist events:', error);
+      }
+    }
+  }
+
+  /**
+   * Calculate long-term exponential backoff delay
+   */
+  private calculateLongTermBackoff(failures: number): number {
+    const config = this.config.persistentQueue;
+    if (!config?.longTermRetryEnabled) {
+      return 0; // No additional backoff
+    }
+
+    const baseDelay = 5000; // 5 seconds
+    const multiplier = config.longTermBackoffMultiplier || 1.5;
+    const maxDelay = config.longTermMaxDelayMs || 300000; // 5 minutes
+
+    const delay = baseDelay * Math.pow(multiplier, failures);
+    return Math.min(delay, maxDelay);
+  }
+
+  /**
+   * Filter out expired events based on maxEventAge
+   */
+  private filterExpiredEvents(events: TelemetryEvent[]): TelemetryEvent[] {
+    const config = this.config.persistentQueue;
+    if (!config?.dropExpiredEvents) {
+      return events;
+    }
+
+    const maxAge = config.maxEventAge || 86400000; // 24 hours
+    const cutoff = Date.now() - maxAge;
+
+    return events.filter(event => {
+      const eventTime = new Date(event.timestamp).getTime();
+      return eventTime >= cutoff;
+    });
+  }
+
+  /**
+   * Gracefully shutdown the batcher and persist remaining events
+   */
+  private async shutdown(): Promise<void> {
+    if (!this.persistentQueue) return;
+
+    try {
+      // Persist any remaining failed events
+      if (this.failedEvents.length > 0) {
+        await this.persistentQueue.persist(this.failedEvents);
+      }
+
+      await this.persistentQueue.shutdown();
+    } catch (error) {
+      if (this.config.debug) {
+        console.error('AutoTrace: Error during shutdown:', error);
+      }
     }
   }
 

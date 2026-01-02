@@ -65,7 +65,7 @@ statsRouter.get('/', requireAuth(storageService.pool), async (req: Request, res:
 
     const durationHours =
       (effectiveEnd.getTime() - historicalStartTime.getTime()) / (1000 * 60 * 60);
-    const preferHourlyAggregates = durationHours >= 24 && !route;
+    const preferHourlyAggregates = durationHours > 168 && !route;
 
     const params: any[] = [teamId, historicalStartTime.toISOString(), effectiveEnd.toISOString()];
     let paramIndex = 4;

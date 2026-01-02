@@ -61,6 +61,38 @@ export interface SamplingOptions {
   hashSalt?: string;
 }
 
+export interface PersistentQueueOptions {
+  /** Enable persistent file-based queue */
+  enabled?: boolean;
+
+  /** Directory path for queue files (default: ./.autotrace-queue) */
+  queueDir?: string;
+
+  /** Maximum events to persist (default: 10000) */
+  maxQueueSize?: number;
+
+  /** How often to write to disk in ms (default: 1000ms) */
+  persistInterval?: number;
+
+  /** Max age of persisted events in ms (default: 86400000 = 24 hours) */
+  maxEventAge?: number;
+
+  /** Drop events older than maxEventAge (default: true) */
+  dropExpiredEvents?: boolean;
+
+  /** Enable long-term retry with extended backoff (default: true) */
+  longTermRetryEnabled?: boolean;
+
+  /** Max delay for long-term retries in ms (default: 300000 = 5 min) */
+  longTermMaxDelayMs?: number;
+
+  /** Backoff multiplier for long-term retries (default: 1.5) */
+  longTermBackoffMultiplier?: number;
+
+  /** Flush buffered events automatically before process exit (default: true) */
+  autoFlushOnExit?: boolean;
+}
+
 /**
  * Configuration options for th instrumentation middleware
  */
@@ -94,4 +126,7 @@ export interface AutoTraceConfig {
 
   /** Control sampling and filtering of events */
   sampling?: SamplingOptions;
+
+  /** Persistent queue configuration for offline resilience */
+  persistentQueue?: PersistentQueueOptions;
 }

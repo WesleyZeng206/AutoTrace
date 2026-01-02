@@ -1,6 +1,8 @@
 import { Activity, Github } from 'lucide-react';
 import Link from 'next/link';
 
+const year = new Date().getFullYear();
+
 export function Footer() {
   return (
     <footer className="bg-gradient-to-r from-slate-900 to-slate-800 text-gray-300 py-12 border-t border-slate-700">
@@ -38,7 +40,7 @@ export function Footer() {
 
         <div className="pt-8 border-t border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-gray-400 text-sm">
-            © 2025 AutoTrace. All rights reserved.
+            © {year} AutoTrace. All rights reserved.
           </p>
           <div className="flex gap-4">
             <a href="https://github.com/WesleyZeng206/AutoTrace" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" aria-label="GitHub">
