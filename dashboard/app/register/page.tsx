@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { register as apiRegister } from '@/lib/auth';
+import { Terminal, Mail, Lock, User, ArrowRight, Check } from 'lucide-react';
 
 const registerSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email format'),
@@ -34,9 +35,16 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
+
+  const password = watch('password', '');
+
+  const passwordStrength = password.length > 0 ?
+    (password.length < 8 ? 'weak' : password.length < 12 ? 'medium' : 'strong') :
+    null;
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
@@ -53,34 +61,26 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Animated background circles */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-cyan-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-      <div className="absolute top-40 right-20 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-1/3 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-
-      <div className="max-w-md w-full space-y-8 relative z-10">
-        {/* Card with glassmorphism */}
-        <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-2xl p-8 transform transition-all duration-500 hover:scale-[1.01] animate-fadeInUp">
-          <div className="text-center">
-            {/* Logo/Icon placeholder */}
-            <div className="mx-auto h-16 w-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4 animate-pulse-slow">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
+      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+        {/* Left Side - Registration Form */}
+        <div className="w-full order-2 lg:order-1">
+          <div className="bg-white rounded-2xl shadow-xl p-8 lg:p-12 border border-gray-100">
+            <div className="mb-8">
+              <h2 className="text-3xl text-gray-900 mb-2">Create your account</h2>
+              <p className="text-gray-600">
+                Already have an account?{' '}
+                <Link
+                  href="/login"
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  Sign in
+                </Link>
+              </p>
             </div>
 
-            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
-              Join AutoTrace
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Start monitoring your services in minutes
-            </p>
-          </div>
-
-          <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
             {error && (
-              <div className="rounded-xl bg-red-50 border-l-4 border-red-500 p-4 animate-shake">
+              <div className="rounded-xl bg-red-50 border-l-4 border-red-500 p-4 mb-6">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -94,109 +94,133 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <div className="space-y-4">
-              <div className="group">
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <input
-                  {...register('email')}
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  className={`appearance-none block w-full px-4 py-3 border-2 ${
-                    errors.email ? 'border-red-400' : 'border-gray-200'
-                  } rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 group-hover:border-blue-300`}
-                  placeholder="you@example.com"
-                />
-                {errors.email && (
-                  <p className="mt-2 text-sm text-red-600 animate-slideIn">{errors.email.message}</p>
-                )}
-              </div>
-
-              <div className="group">
-                <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-2">
+            {/* Registration Form */}
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <div>
+                <label htmlFor="username" className="block text-sm text-gray-700 mb-2">
                   Username
                 </label>
-                <input
-                  {...register('username')}
-                  id="username"
-                  type="text"
-                  autoComplete="username"
-                  className={`appearance-none block w-full px-4 py-3 border-2 ${
-                    errors.username ? 'border-red-400' : 'border-gray-200'
-                  } rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 group-hover:border-blue-300`}
-                  placeholder="username"
-                />
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    {...register('username')}
+                    id="username"
+                    type="text"
+                    autoComplete="username"
+                    placeholder="username"
+                    className={`w-full pl-10 pr-4 py-3 border ${
+                      errors.username ? 'border-red-400' : 'border-gray-300'
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  />
+                </div>
                 {errors.username && (
-                  <p className="mt-2 text-sm text-red-600 animate-slideIn">{errors.username.message}</p>
+                  <p className="mt-2 text-sm text-red-600">{errors.username.message}</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="group">
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Password
-                  </label>
+              <div>
+                <label htmlFor="email" className="block text-sm text-gray-700 mb-2">
+                  Email address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    {...register('email')}
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    className={`w-full pl-10 pr-4 py-3 border ${
+                      errors.email ? 'border-red-400' : 'border-gray-300'
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  />
+                </div>
+                {errors.email && (
+                  <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm text-gray-700 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     {...register('password')}
                     id="password"
                     type="password"
                     autoComplete="new-password"
-                    className={`appearance-none block w-full px-4 py-3 border-2 ${
-                      errors.password ? 'border-red-400' : 'border-gray-200'
-                    } rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 group-hover:border-blue-300`}
                     placeholder="••••••••"
+                    className={`w-full pl-10 pr-4 py-3 border ${
+                      errors.password ? 'border-red-400' : 'border-gray-300'
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
                   />
-                  {errors.password && (
-                    <p className="mt-2 text-sm text-red-600 animate-slideIn">{errors.password.message}</p>
-                  )}
                 </div>
+                {passwordStrength && (
+                  <div className="mt-2">
+                    <div className="flex gap-1">
+                      <div className={`h-1 flex-1 rounded ${passwordStrength === 'weak' ? 'bg-red-500' : passwordStrength === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
+                      <div className={`h-1 flex-1 rounded ${passwordStrength === 'medium' ? 'bg-yellow-500' : passwordStrength === 'strong' ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                      <div className={`h-1 flex-1 rounded ${passwordStrength === 'strong' ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {passwordStrength === 'weak' && 'Weak password'}
+                      {passwordStrength === 'medium' && 'Medium strength'}
+                      {passwordStrength === 'strong' && 'Strong password'}
+                    </p>
+                  </div>
+                )}
+                {errors.password && (
+                  <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
+                )}
+              </div>
 
-                <div className="group">
-                  <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Confirm
-                  </label>
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm text-gray-700 mb-2">
+                  Confirm password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     {...register('confirmPassword')}
                     id="confirmPassword"
                     type="password"
                     autoComplete="new-password"
-                    className={`appearance-none block w-full px-4 py-3 border-2 ${
-                      errors.confirmPassword ? 'border-red-400' : 'border-gray-200'
-                    } rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 group-hover:border-blue-300`}
-                    placeholder="••••••••"/>
-                  {errors.confirmPassword && (
-                    <p className="mt-2 text-sm text-red-600 animate-slideIn">{errors.confirmPassword.message}</p>
-                  )}
+                    placeholder="••••••••"
+                    className={`w-full pl-10 pr-4 py-3 border ${
+                      errors.confirmPassword ? 'border-red-400' : 'border-gray-300'
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  />
                 </div>
+                {errors.confirmPassword && (
+                  <p className="mt-2 text-sm text-red-600">{errors.confirmPassword.message}</p>
+                )}
               </div>
 
-              <div className="group">
-                <label htmlFor="teamName" className="block text-sm font-semibold text-gray-700 mb-2">
+              <div>
+                <label htmlFor="teamName" className="block text-sm text-gray-700 mb-2">
                   Team Name <span className="text-gray-400 font-normal">(Optional)</span>
                 </label>
-                <input
-                  {...register('teamName')}
-                  id="teamName"
-                  type="text"
-                  className="appearance-none block w-full px-4 py-3 border-2 border-gray-200 rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 group-hover:border-blue-300"
-                  placeholder="Team Name"
-                />
-                <p className="mt-2 text-xs text-gray-500 flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    {...register('teamName')}
+                    id="teamName"
+                    type="text"
+                    placeholder="Team Name"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
                   Leave blank to auto-generate from username
                 </p>
               </div>
-            </div>
 
-            <div className="pt-2">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <span className="flex items-center">
@@ -207,97 +231,80 @@ export default function RegisterPage() {
                     Creating your account...
                   </span>
                 ) : (
-                  <span className="flex items-center">
-                    Create Account
-                    <svg className="ml-2 -mr-1 w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </span>
+                  <>
+                    Create account
+                    <ArrowRight className="w-5 h-5" />
+                  </>
                 )}
               </button>
-            </div>
-          </form>
+            </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+            <div className="mt-6 text-center text-xs text-gray-500">
+              By creating an account, you agree to secure data handling practices
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Benefits */}
+        <div className="hidden lg:block space-y-8 order-1 lg:order-2">
+          <div className="space-y-4">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-8"
+            >
+              <Terminal className="w-8 h-8 text-blue-600" />
+              <span className="text-2xl text-gray-900">AutoTrace</span>
+            </Link>
+
+            <h1 className="text-5xl text-gray-900">
+              Start tracking your telemetry today
+            </h1>
+          </div>
+
+          {/* Benefits List */}
+          <div className="space-y-4 pt-8">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Check className="w-5 h-5 text-green-600" />
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Already have an account?</span>
+              <div>
+                <div className="text-gray-900">Real-time Data Collection</div>
+                <div className="text-sm text-gray-500">Track events as they happen across your services</div>
               </div>
             </div>
 
-            <div className="mt-6 text-center">
-              <Link
-                href="/login"
-                className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 transition-all duration-300"
-              >
-                Sign in instead →
-              </Link>
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Check className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <div className="text-gray-900">Custom Sampling</div>
+                <div className="text-sm text-gray-500">Control data collection with flexible sampling rates</div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Check className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <div className="text-gray-900">Aggregated Insights</div>
+                <div className="text-sm text-gray-500">View pre-computed metrics on your dashboard</div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Check className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <div className="text-gray-900">Team Collaboration</div>
+                <div className="text-sm text-gray-500">Manage multiple team members and API keys</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-          20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(0.98); }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease-out;
-        }
-        .animate-slideIn {
-          animation: slideIn 0.3s ease-out;
-        }
-        .animate-shake {
-          animation: shake 0.5s ease-out;
-        }
-        .animate-pulse-slow {
-          animation: pulse-slow 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
+import { Terminal, Mail, Lock, ArrowRight } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email format'),
@@ -43,32 +44,69 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Animated background circles */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-      <div className="absolute top-0 right-0 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-      <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
+      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+        {/* Left Side - Branding & Info */}
+        <div className="hidden lg:block space-y-8">
+          <div className="space-y-4">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-8"
+            >
+              <Terminal className="w-8 h-8 text-blue-600" />
+              <span className="text-2xl text-gray-900">AutoTrace</span>
+            </Link>
 
-      <div className="max-w-md w-full space-y-8 relative z-10">
-        {/* Card with glassmorphism */}
-        <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-2xl p-8 transform transition-all duration-500 hover:scale-[1.02] animate-fadeInUp">
-          <div className="text-center">
-            {/* Logo/Icon placeholder */}
-            <div className="mx-auto h-16 w-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 animate-bounce-slow">
-              <span className="text-white text-2xl font-bold">AT</span>
-            </div>
-
-            <h2 className="text-4xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              Welcome Back
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Sign in to your AutoTrace account
+            <h1 className="text-5xl text-gray-900">
+              Welcome back to your telemetry dashboard
+            </h1>
+            <p className="text-xl text-gray-600">
+              Monitor your applications in real-time and gain powerful insights into your service performance.
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          {/* Decorative Stats */}
+          <div className="space-y-4 pt-8">
+            <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              </div>
+              <div>
+                <div className="text-gray-900">Real-time Monitoring</div>
+                <div className="text-sm text-gray-500">Track your services as events happen</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <ArrowRight className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <div className="text-gray-900">High Performance</div>
+                <div className="text-sm text-gray-500">Fast aggregation and data processing</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Login Form */}
+        <div className="w-full">
+          <div className="bg-white rounded-2xl shadow-xl p-8 lg:p-12 border border-gray-100">
+            <div className="mb-8">
+              <h2 className="text-3xl text-gray-900 mb-2">Sign in to your account</h2>
+              <p className="text-gray-600">
+                Don't have an account?{' '}
+                <Link
+                  href="/register"
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  Create one now
+                </Link>
+              </p>
+            </div>
+
             {error && (
-              <div className="rounded-xl bg-red-50 border-l-4 border-red-500 p-4 animate-shake">
+              <div className="rounded-xl bg-red-50 border-l-4 border-red-500 p-4 mb-6">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -82,65 +120,64 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div className="space-y-4">
-              <div className="group">
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email Address
+            {/* Email/Password Form */}
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <div>
+                <label htmlFor="email" className="block text-sm text-gray-700 mb-2">
+                  Email address
                 </label>
                 <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     {...register('email')}
                     id="email"
                     type="email"
                     autoComplete="email"
-                    className={`appearance-none block w-full px-4 py-3 border-2 ${
-                      errors.email ? 'border-red-400' : 'border-gray-200'
-                    } rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 group-hover:border-purple-300`}
                     placeholder="you@example.com"
+                    className={`w-full pl-10 pr-4 py-3 border ${
+                      errors.email ? 'border-red-400' : 'border-gray-300'
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
                   />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                    </svg>
-                  </div>
                 </div>
                 {errors.email && (
-                  <p className="mt-2 text-sm text-red-600 animate-slideIn">{errors.email.message}</p>
+                  <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
                 )}
               </div>
 
-              <div className="group">
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+              <div>
+                <label htmlFor="password" className="block text-sm text-gray-700 mb-2">
                   Password
                 </label>
                 <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     {...register('password')}
                     id="password"
                     type="password"
                     autoComplete="current-password"
-                    className={`appearance-none block w-full px-4 py-3 border-2 ${
-                      errors.password ? 'border-red-400' : 'border-gray-200'
-                    } rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 group-hover:border-purple-300`}
                     placeholder="••••••••"
+                    className={`w-full pl-10 pr-4 py-3 border ${
+                      errors.password ? 'border-red-400' : 'border-gray-300'
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
                   />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
                 </div>
                 {errors.password && (
-                  <p className="mt-2 text-sm text-red-600 animate-slideIn">{errors.password.message}</p>
+                  <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
                 )}
               </div>
-            </div>
 
-            <div>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                  <span className="text-sm text-gray-600">Remember me</span>
+                </label>
+              </div>
+
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl">
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 {isLoading ? (
                   <span className="flex items-center">
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
@@ -148,97 +185,22 @@ export default function LoginPage() {
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     Signing in...
-                  </span>) : (
-                  <span className="flex items-center">
-                    Sign In
-                    <svg className="ml-2 -mr-1 w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
                   </span>
+                ) : (
+                  <>
+                    Sign in
+                    <ArrowRight className="w-5 h-5" />
+                  </>
                 )}
               </button>
-            </div>
-          </form>
+            </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">New to AutoTrace?</span>
-              </div>
-            </div>
-
-            <div className="mt-6 text-center">
-              <Link
-                href="/register"
-                className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300">
-                Create a new account →
-              </Link>
+            <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
+              Secure telemetry data collection and analysis
             </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-          20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease-out;
-        }
-        .animate-slideIn {
-          animation: slideIn 0.3s ease-out;
-        }
-        .animate-shake {
-          animation: shake 0.5s ease-out;
-        }
-        .animate-bounce-slow {
-          animation: bounce-slow 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }
