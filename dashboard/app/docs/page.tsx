@@ -62,10 +62,11 @@ export default function Documentation() {
           </div>
 
           <Tabs defaultValue="installation" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="installation">Installation</TabsTrigger>
               <TabsTrigger value="usage">Usage</TabsTrigger>
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="anomalies">Anomalies</TabsTrigger>
               <TabsTrigger value="examples">Examples</TabsTrigger>
               <TabsTrigger value="resilience">Resilience</TabsTrigger>
             </TabsList>
@@ -249,6 +250,7 @@ app.use(createAutoTraceErrorHandler(config));`}</code>
                     <li><strong>Time range:</strong> 15 minutes to 7 days</li>
                     <li><strong>Intervals:</strong> 15m, 30m, or 1h aggregation</li>
                     <li><strong>Teams:</strong> Switch teams with the selector</li>
+                    <li><strong>Anomaly Detection:</strong> Automatically detects spikes in latency and errors</li>
                   </ul>
                 </div>
               </Card>
@@ -421,6 +423,213 @@ app.use(createAutoTraceErrorHandler(config));`}</code>
                       <li>Large gaps between P50 and P99 (inconsistent performance)</li>
                     </ul>
                   </div>
+                </div>
+              </Card>
+            </TabsContent>
+
+            {/* Anomalies Tab */}
+            <TabsContent value="anomalies" className="space-y-4">
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">What are Anomalies?</h2>
+                <p className="text-muted-foreground mb-4">
+                  AutoTrace automatically detects unusual patterns in your application metrics using statistical analysis.
+                  Anomalies are performance issues or error spikes that deviate significantly from normal behavior.
+                </p>
+                <div className="space-y-3">
+                  <p className="font-medium text-gray-900">Detected Anomalies:</p>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
+                    <li><strong>Latency Spikes:</strong> When average response time is abnormally high</li>
+                    <li><strong>Error Rate Increases:</strong> When error percentage jumps above baseline</li>
+                    <li><strong>Service Degradation:</strong> Gradual performance decline over time</li>
+                  </ul>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">How Anomaly Detection Works</h2>
+                <p className="text-muted-foreground mb-4">
+                  AutoTrace uses statistical methods to identify anomalies without requiring machine learning models:
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-2">1. Baseline Calculation</p>
+                    <p className="text-sm text-muted-foreground">
+                      System analyzes the last 48 hours of metrics to establish normal patterns for each service and route.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-2">2. Statistical Scoring (Z-Score)</p>
+                    <p className="text-sm text-muted-foreground">
+                      Each metric is scored based on how many standard deviations it is from the baseline average.
+                      A Z-score of 3.0 means the value is 3 standard deviations away from normal.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-2">3. Severity Classification</p>
+                    <p className="text-sm text-muted-foreground">
+                      Anomalies are automatically categorized as Critical, Warning, or Info based on their Z-score.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-2">4. Real-Time Scoring</p>
+                    <p className="text-sm text-muted-foreground">
+                      The ingestion API re-runs detection every time you query `/anomalies/realtime`, so the dashboard shows spikes seconds after telemetry is ingested—no cron job required.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Anomaly Severity Levels</h2>
+                <div className="space-y-4">
+                  <div className="border-l-4 border-red-500 bg-red-50 p-4 rounded">
+                    <p className="font-semibold text-red-900 mb-2">🔴 CRITICAL</p>
+                    <p className="text-sm text-red-800 mb-2">Immediate attention required</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-red-800 ml-4">
+                      <li>Z-score ≥ 3.0 (99.7th percentile)</li>
+                      <li>Metric is 3+ standard deviations from baseline</li>
+                      <li>Indicates major performance degradation or outage</li>
+                    </ul>
+                    <p className="text-xs text-red-700 mt-2 italic">
+                      Example: Average latency jumped from 100ms to 500ms, or error rate went from 1% to 15%
+                    </p>
+                  </div>
+
+                  <div className="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
+                    <p className="font-semibold text-yellow-900 mb-2">⚠️ WARNING</p>
+                    <p className="text-sm text-yellow-800 mb-2">Should be investigated soon</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-yellow-800 ml-4">
+                      <li>Z-score ≥ 2.0 and &lt; 3.0 (95th percentile)</li>
+                      <li>Metric is 2-3 standard deviations from baseline</li>
+                      <li>Early indicator of potential issues</li>
+                    </ul>
+                    <p className="text-xs text-yellow-700 mt-2 italic">
+                      Example: Latency increased from 100ms to 250ms, or error rate went from 1% to 5%
+                    </p>
+                  </div>
+
+                  <div className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
+                    <p className="font-semibold text-blue-900 mb-2">ℹ️ INFO</p>
+                    <p className="text-sm text-blue-800 mb-2">Slight deviation, usually not shown</p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-blue-800 ml-4">
+                      <li>Z-score &lt; 2.0</li>
+                      <li>Within normal variation range</li>
+                      <li>Not displayed in dashboard by default</li>
+                    </ul>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Anomaly Card Display</h2>
+                <p className="text-muted-foreground mb-4">
+                  When anomalies are detected, they appear in a dedicated card on the dashboard:
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-medium text-gray-900">Service Name</p>
+                    <p className="text-sm text-muted-foreground">Which service experienced the anomaly</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Route</p>
+                    <p className="text-sm text-muted-foreground">The specific endpoint affected</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Metric</p>
+                    <p className="text-sm text-muted-foreground">Whether it's avg_latency or error_rate</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Z-Score</p>
+                    <p className="text-sm text-muted-foreground">How far the metric deviated from baseline (higher = more unusual)</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Baseline</p>
+                    <p className="text-sm text-muted-foreground">The normal expected value for comparison</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Time</p>
+                    <p className="text-sm text-muted-foreground">When the anomaly occurred (e.g., "15m ago", "2h ago")</p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Interpreting Anomalies</h2>
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-medium text-gray-900 mb-2">What Causes Anomalies?</p>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground ml-4">
+                      <li><strong>Traffic Spikes:</strong> Sudden increase in requests can slow down responses</li>
+                      <li><strong>Code Deployments:</strong> New code may introduce performance regressions</li>
+                      <li><strong>Database Issues:</strong> Slow queries or connection pool exhaustion</li>
+                      <li><strong>External Dependencies:</strong> Third-party APIs or services degrading</li>
+                      <li><strong>Resource Constraints:</strong> Running out of CPU, memory, or disk space</li>
+                      <li><strong>Network Problems:</strong> Latency or packet loss in infrastructure</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <p className="font-medium text-gray-900 mb-2">When to Take Action</p>
+                    <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground ml-4">
+                      <li><strong>Critical Anomalies:</strong> Investigate immediately, check logs and infrastructure</li>
+                      <li><strong>Warning Anomalies:</strong> Monitor closely, consider investigating if they persist</li>
+                      <li><strong>Multiple Routes Affected:</strong> Likely a systemic issue (database, infrastructure)</li>
+                      <li><strong>Single Route Affected:</strong> Specific endpoint problem (code bug, slow query)</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <p className="font-medium text-gray-900 mb-2">False Positives</p>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Sometimes anomalies are detected for legitimate reasons:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-4">
+                      <li>Scheduled batch jobs that temporarily increase latency</li>
+                      <li>Expected traffic patterns (e.g., higher load during business hours)</li>
+                      <li>Marketing campaigns or product launches increasing traffic</li>
+                    </ul>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      These are normal and can be expected. The system will adjust baselines over time.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Anomaly Detection Frequency</h2>
+                <p className="text-muted-foreground mb-4">
+                  Real-time scoring means there is no background cron job to maintain:
+                </p>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <div className="flex items-start gap-3">
+                    <span className="font-semibold text-gray-900 min-w-[140px]">Analysis Trigger:</span>
+                    <span>On-demand whenever the dashboard or API calls <code className="bg-slate-100 px-1 rounded">/anomalies/realtime</code></span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="font-semibold text-gray-900 min-w-[140px]">Historical Window:</span>
+                    <span>Defaults to 48 hours (configurable via `windowHours` or env)</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="font-semibold text-gray-900 min-w-[140px]">Dashboard Refresh:</span>
+                    <span>Every 60 seconds for the anomaly card</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="font-semibold text-gray-900 min-w-[140px]">Data Source:</span>
+                    <span>Directly queries <code className="bg-slate-100 px-1 rounded">requests_raw</code>, so retention matches your telemetry policy</span>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">No Anomalies? That's Good!</h2>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm text-green-900 mb-2">
+                    <strong>If you don't see any anomalies, your application is performing normally.</strong>
+                  </p>
+                  <p className="text-sm text-green-800">
+                    Anomalies only appear when metrics deviate significantly from baseline patterns.
+                    A healthy application will have few or no anomalies most of the time.
+                  </p>
                 </div>
               </Card>
             </TabsContent>

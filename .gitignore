@@ -21,3 +21,14 @@ out/
 tech_debt.md
 simple_test
 feature_37_plan.md
+analytics/anomaly_job/test.md
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+env/
+.venv/
+ENV/

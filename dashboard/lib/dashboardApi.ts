@@ -72,6 +72,36 @@ export async function fetchDistribution(params: RangeParams): Promise<Distributi
   return distribution ?? [];
 }
 
+export interface AnomalyData {
+  id: string;
+  team_id: string;
+  service_name: string;
+  route: string;
+  time_bucket: string;
+  metric: string;
+  score: number;
+  severity: 'info' | 'warning' | 'critical';
+  baseline_mean: number;
+  baseline_std: number | null;
+  created_at: string;
+}
+
+export async function fetchAnomalies(params: RangeParams & { severity?: string; limit?: number; windowHours?: number }): Promise<AnomalyData[]> {
+  const apiParams: Record<string, string> = {
+    teamId: params.teamId,
+    startTime: params.startTime,
+    endTime: params.endTime,
+    windowHours: (params.windowHours || 48).toString(),
+  };
+
+  if (params.severity) apiParams.severity = params.severity;
+  if (params.limit) apiParams.limit = params.limit.toString();
+
+  const url = buildUrl('/api/anomalies/realtime', apiParams);
+  const { anomalies } = await fetchJson<{ anomalies: AnomalyData[] }>(url);
+  return anomalies ?? [];
+}
+
 function buildUrl(path: string, params: Record<string, string>) {
   const url = new URL(path, window.location.origin);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));

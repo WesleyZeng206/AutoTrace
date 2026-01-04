@@ -1,5 +1,4 @@
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: autotrace-db
@@ -20,7 +19,6 @@ services:
     networks:
       - autotrace-network
 
-  # Ingestion Service
   ingestion:
     build:
       context: .
@@ -37,9 +35,16 @@ services:
       BCRYPT_ROUNDS: 10
       SESSION_DURATION_DAYS: 7
       RATE_LIMIT_REQUESTS: 100
+      TELEMETRY_RATE_LIMIT: 500
       AGGREGATOR_ENABLED: true
       AGGREGATOR_INTERVAL: 1h
       AGGREGATOR_RUN_ON_STARTUP: false
+      REALTIME_ANOMALY_DEFAULT_WINDOW_HOURS: 48
+      REALTIME_ANOMALY_MAX_WINDOW_HOURS: 168
+      REALTIME_ANOMALY_MIN_REQUESTS: 10
+      REALTIME_ANOMALY_CRITICAL_THRESHOLD: 3.0
+      REALTIME_ANOMALY_WARNING_THRESHOLD: 2.0
+      REALTIME_ANOMALY_MIN_DATA_POINTS: 5
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,7 +52,6 @@ services:
       - autotrace-network
     restart: unless-stopped
 
-  # Dashboard Service
   dashboard:
     build:
       context: .

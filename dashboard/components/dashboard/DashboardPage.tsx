@@ -12,8 +12,9 @@ import { LatencyChart } from '@/components/LatencyChart';
 import { MetricCard } from '@/components/MetricCard';
 import { EndpointTable } from '@/components/EndpointTable';
 import { ResponseTimeDistribution } from '@/components/ResponseTimeDistribution';
+import { AnomaliesCard } from '@/components/AnomaliesCard';
 import { Activity, AlertCircle, Clock, TrendingUp } from 'lucide-react';
-import { fetchMetrics, fetchServices, fetchStats, fetchRoutes, fetchDistribution } from '@/lib/dashboardApi';
+import { fetchMetrics, fetchServices, fetchStats, fetchRoutes, fetchDistribution, fetchAnomalies } from '@/lib/dashboardApi';
 
 const timeRanges = [
   { id: '15m', label: 'Last 15m', hours: 0.25 },
@@ -84,6 +85,14 @@ export default function DashboardPage() {
     queryFn: () => fetchDistribution({ teamId: teamId!, startTime, endTime }),
     enabled: Boolean(teamId),
     staleTime: 30_000,
+  });
+
+  const anomaliesQuery = useQuery({
+    queryKey: ['anomalies', teamId, startTime, endTime],
+    queryFn: () => fetchAnomalies({ teamId: teamId!, startTime, endTime, limit: 50 }),
+    enabled: Boolean(teamId),
+    staleTime: 30_000,
+    refetchInterval: 60_000, // Refetch every minute
   });
 
   if (authLoading) {
@@ -293,6 +302,14 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Anomalies Section */}
+            <div className="mt-6">
+              <AnomaliesCard
+                anomalies={anomaliesQuery.data ?? []}
+                isLoading={anomaliesQuery.isLoading}
+              />
+            </div>
 
             {/* Bottom Grid - Route Analytics */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">

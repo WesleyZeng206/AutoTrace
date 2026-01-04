@@ -187,3 +187,4 @@ BEGIN
   ORDER BY total_requests DESC;
 END;
 $$ LANGUAGE plpgsql;
+

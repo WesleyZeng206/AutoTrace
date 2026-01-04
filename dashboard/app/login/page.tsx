@@ -46,13 +46,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
-        {/* Left Side - Branding & Info */}
         <div className="hidden lg:block space-y-8">
           <div className="space-y-4">
             <Link
               href="/"
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-8"
-            >
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-8">
               <Terminal className="w-8 h-8 text-blue-600" />
               <span className="text-2xl text-gray-900">AutoTrace</span>
             </Link>
@@ -176,8 +174,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 {isLoading ? (
                   <span className="flex items-center">
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">

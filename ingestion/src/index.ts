@@ -10,6 +10,7 @@ import { metricsRouter } from './routes/metrics';
 import { statsRouter } from './routes/stats';
 import { routesRouter } from './routes/routes';
 import { distributionRouter } from './routes/distribution';
+import { anomaliesRealtimeRouter } from './routes/anomaliesRealtime';
 import { createAuthRouter } from './routes/auth';
 import { createTeamsRouter } from './routes/teams';
 import { createApiKeysRouter } from './routes/apiKeys';
@@ -30,7 +31,6 @@ dotenv.config();
 const PORT = Number(process.env.PORT) || 4000;
 const app = express();
 
-// Trust proxy if configured (for accurate IP detection behind load balancers)
 if (process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true') {
   app.set('trust proxy', 1);
   console.log('Trust proxy enabled - using X-Forwarded-For for IP detection');
@@ -54,7 +54,6 @@ const corsOptions = allowedOrigins.length > 0
       credentials: false
     };
 
-// Security middleware - order matters!
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -88,12 +87,10 @@ app.get('/health', async (_req, res) => {
   res.status(dbHealthy ? 200 : 503).json({ status: dbHealthy ? 'ok' : 'degraded', timestamp: new Date().toISOString(), service: 'autotrace-ingestion', dependencies: { database: dbHealthy ? 'healthy' : 'unhealthy' } });
 });
 
-// Multi-tenant routes with appropriate rate limiting
 app.use('/auth', authRateLimiter, createAuthRouter(storageService.pool));
 app.use('/teams', apiRateLimiter, createTeamsRouter(storageService.pool));
 app.use('/api-keys', apiRateLimiter, createApiKeysRouter(storageService.pool));
 
-// Telemetry routes
 app.use('/telemetry', telemetryRouter);
 app.use('/aggregator', aggregatorRouter);
 app.use('/services', apiRateLimiter, servicesRouter);
@@ -101,6 +98,7 @@ app.use('/metrics', apiRateLimiter, metricsRouter);
 app.use('/stats', apiRateLimiter, statsRouter);
 app.use('/routes', apiRateLimiter, routesRouter);
 app.use('/distribution', apiRateLimiter, distributionRouter);
+app.use('/anomalies/realtime', apiRateLimiter, anomaliesRealtimeRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled error:', err);
