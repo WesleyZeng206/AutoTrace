@@ -7,9 +7,7 @@ import { anomalyConfig } from '../config/anomalyConfig';
  */
 export type SeverityLevel = 'info' | 'warning' | 'critical';
 
-
 export type MetricType = 'avg_latency' | 'error_rate';
-
 
 interface TimeBucketData {
   time_bucket: Date;

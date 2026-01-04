@@ -61,7 +61,7 @@ export function createAuthRouter(pool: Pool): Router {
 
   router.post('/login', async (req: Request, res: Response) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, rememberMe } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({
@@ -73,17 +73,20 @@ export function createAuthRouter(pool: Pool): Router {
       const { token, user } = await authService.login(email, password);
 
       const isProduction = process.env.NODE_ENV === 'production';
+      // Set cookie expiration: 30 days if rememberMe is checked, otherwise 1 day
+      const maxAge = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+
       res.cookie('session_token', token, {
         httpOnly: true,
-        secure: isProduction, 
+        secure: isProduction,
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge,
         path: '/',
       });
 
       res.status(200).json({
         message: 'Login successful',
-        token, 
+        token,
         user,
       });
     } catch (error: any) {

@@ -12,6 +12,7 @@ import { Terminal, Mail, Lock, ArrowRight } from 'lucide-react';
 const loginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email format'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  rememberMe: z.boolean().optional(),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -22,19 +23,19 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
 
-  const {
-    register,
+  const {register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {rememberMe: false,},
   });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError('');
       setIsLoading(true);
-      await login(data.email, data.password);
+      await login(data.email, data.password, data.rememberMe);
       // Router.push is handled in login function
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.');
@@ -166,7 +167,11 @@ export default function LoginPage() {
 
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                  <input
+                    {...register('rememberMe')}
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
                   <span className="text-sm text-gray-600">Remember me</span>
                 </label>
               </div>

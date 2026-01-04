@@ -52,10 +52,10 @@ export async function register(
 /**
  * Login user
  */
-export async function login(email: string, password: string): Promise<LoginResponse> {
+export async function login(email: string, password: string, rememberMe?: boolean): Promise<LoginResponse> {
   return fetchJson<LoginResponse>(`/api/auth/login`, {
     method: 'POST',
-    json: { email, password },
+    json: { email, password, rememberMe },
   });
 }
 
