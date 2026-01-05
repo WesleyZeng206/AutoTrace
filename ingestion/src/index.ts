@@ -14,6 +14,7 @@ import { anomaliesRealtimeRouter } from './routes/anomaliesRealtime';
 import { createAuthRouter } from './routes/auth';
 import { createTeamsRouter } from './routes/teams';
 import { createApiKeysRouter } from './routes/apiKeys';
+import healthRouter from './routes/health';
 import { storageService } from './services/storage';
 import { aggregatorService } from './services/aggregator';
 import {
@@ -82,10 +83,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
-app.get('/health', async (_req, res) => {
-  const dbHealthy = await storageService.healthCheck();
-  res.status(dbHealthy ? 200 : 503).json({ status: dbHealthy ? 'ok' : 'degraded', timestamp: new Date().toISOString(), service: 'autotrace-ingestion', dependencies: { database: dbHealthy ? 'healthy' : 'unhealthy' } });
-});
+app.use('/health', healthRouter);
 
 app.use('/auth', authRateLimiter, createAuthRouter(storageService.pool));
 app.use('/teams', apiRateLimiter, createTeamsRouter(storageService.pool));

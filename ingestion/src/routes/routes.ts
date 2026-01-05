@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { storageService } from '../services/storage';
+import { cacheService } from '../services/cache';
+import { CacheKeys } from '../utils/cacheKeys';
+import { normalizeWindow } from '../utils/timeWindow';
 
 export const routesRouter = Router();
 
@@ -59,15 +62,32 @@ routesRouter.get('/', requireAuth(storageService.pool), async (req: Request, res
       });
     }
 
-    // Set default time range
     const now = new Date();
     const requestedEnd = endTime ?? now;
     const effectiveEnd = requestedEnd > now ? now : requestedEnd;
     const fallbackStart = startTime ?? new Date(effectiveEnd.getTime() - 24 * 60 * 60 * 1000);
     const historicalStartTime = startTime || fallbackStart;
 
+    const { start: normalizedStart, end: normalizedEnd } = normalizeWindow(
+      historicalStartTime,
+      effectiveEnd
+    );
+
+    const cacheKey = CacheKeys.routes(
+      teamId,
+      normalizedStart.toISOString(),
+      normalizedEnd.toISOString(),
+      service as string | undefined
+    );
+
+    const cached = await cacheService.get<any[]>(cacheKey);
+    if (cached) {
+      res.setHeader('X-Cache', 'HIT');
+      return res.status(200).json({ routes: cached });
+    }
+
     const windowDurationHours = (effectiveEnd.getTime() - historicalStartTime.getTime()) / (1000 * 60 * 60);
-    const useAggregates = windowDurationHours > 168; // Use aggregates for windows longer than 7 days
+    const useAggregates = windowDurationHours > 168;
 
     const params: any[] = [teamId, historicalStartTime.toISOString(), effectiveEnd.toISOString()];
     let paramIndex = 4;
@@ -160,6 +180,10 @@ routesRouter.get('/', requireAuth(storageService.pool), async (req: Request, res
       };
     });
 
+    const ttl = parseInt(process.env.REDIS_TTL_ROUTES || '60', 10);
+    await cacheService.set(cacheKey, routes, ttl);
+
+    res.setHeader('X-Cache', 'MISS');
     res.status(200).json({ routes });
   } catch (error) {
     console.error('Error fetching route statistics:', error);

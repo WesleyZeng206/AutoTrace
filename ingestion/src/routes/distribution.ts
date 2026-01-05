@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { storageService } from '../services/storage';
+import { cacheService } from '../services/cache';
+import { CacheKeys } from '../utils/cacheKeys';
+import { normalizeWindow } from '../utils/timeWindow';
 
 export const distributionRouter = Router();
 
@@ -14,7 +17,6 @@ distributionRouter.get('/', requireAuth(storageService.pool), async (req: Reques
   try {
     const { teamId, service, route, startTime: startTimeRaw, endTime: endTimeRaw } = req.query;
 
-    // Validate required teamId parameter
     if (!teamId || typeof teamId !== 'string') {
       return res.status(400).json({
         error: 'Bad Request',
@@ -59,6 +61,24 @@ distributionRouter.get('/', requireAuth(storageService.pool), async (req: Reques
     const effectiveEnd = requestedEnd > now ? now : requestedEnd;
     const fallbackStart = startTime ?? new Date(effectiveEnd.getTime() - 24 * 60 * 60 * 1000);
     const historicalStartTime = startTime || fallbackStart;
+
+    const { start: normalizedStart, end: normalizedEnd } = normalizeWindow(historicalStartTime,
+      effectiveEnd
+    );
+
+    const cacheKey = CacheKeys.distribution(
+      teamId,
+      normalizedStart.toISOString(),
+      normalizedEnd.toISOString(),
+      service as string | undefined,
+      route as string | undefined
+    );
+
+    const cached = await cacheService.get<{ range: string; count: number }[]>(cacheKey);
+    if (cached) {
+      res.setHeader('X-Cache', 'HIT');
+      return res.status(200).json({ distribution: cached });
+    }
 
     const ranges = [
       { start: 0, end: 50, label: '0-50ms' },
@@ -113,6 +133,10 @@ distributionRouter.get('/', requireAuth(storageService.pool), async (req: Reques
       { range: '1s+', count: parseInt(row.range_1000_plus || '0', 10) },
     ];
 
+    const ttl = parseInt(process.env.REDIS_TTL_DISTRIBUTION || '60', 10);
+    await cacheService.set(cacheKey, distribution, ttl);
+
+    res.setHeader('X-Cache', 'MISS');
     return res.status(200).json({ distribution });
   } catch (error) {
     console.error('Error fetching response time distribution:', error);

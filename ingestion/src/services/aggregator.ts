@@ -1,4 +1,5 @@
 import { storageService } from './storage';
+import { cacheService } from './cache';
 
 type Cfg = { enabled: boolean; interval: number; runOnStartup: boolean };
 const MAX_WINDOWS = 24 * 31;
@@ -94,6 +95,10 @@ export class AggregatorService {
         await storageService.computeHourlyAggregates(s, e);
         this.last = e;
       }
+
+      await cacheService.invalidatePattern('stats:*');
+      await cacheService.invalidatePattern('metrics:*');
+      await cacheService.invalidatePattern('routes:*');
 
       const label = batches.map(([s, e]) => s.toISOString() + '->' + e.toISOString()).join(', ');
       console.log('Aggregated ' + label + ' in ' + (Date.now() - started) + 'ms');

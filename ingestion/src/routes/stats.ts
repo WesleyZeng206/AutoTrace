@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { storageService } from '../services/storage';
+import { cacheService } from '../services/cache';
+import { CacheKeys } from '../utils/cacheKeys';
+import { normalizeWindow } from '../utils/timeWindow';
 
 export const statsRouter = Router();
 
@@ -62,6 +65,24 @@ statsRouter.get('/', requireAuth(storageService.pool), async (req: Request, res:
     const effectiveEnd = requestedEnd > now ? now : requestedEnd;
     const fallbackStart = startTime ?? new Date(effectiveEnd.getTime() - 24 * 60 * 60 * 1000);
     const historicalStartTime = startTime || fallbackStart;
+
+    const { start: normalizedStart, end: normalizedEnd } = normalizeWindow(
+      historicalStartTime,
+      effectiveEnd
+    );
+
+    const cacheKey = CacheKeys.stats(teamId,
+      normalizedStart.toISOString(),
+      normalizedEnd.toISOString(),
+      service as string | undefined
+    );
+
+    const cached = await cacheService.get<any>(cacheKey);
+
+    if (cached) {
+      res.setHeader('X-Cache', 'HIT');
+      return res.status(200).json({ stats: cached });
+    }
 
     const durationHours =
       (effectiveEnd.getTime() - historicalStartTime.getTime()) / (1000 * 60 * 60);
@@ -142,18 +163,22 @@ statsRouter.get('/', requireAuth(storageService.pool), async (req: Request, res:
     const errorCount = parseInt(row.error_count, 10);
     const errorRate = totalRequests > 0 ? (errorCount / totalRequests) * 100 : 0;
 
-    res.status(200).json({
-      stats: {
-        totalRequests,
-        errorCount,
-        errorRate: Math.round(errorRate * 100) / 100,
-        avgLatency: Math.round(parseFloat(row.avg_latency || '0') * 100) / 100,
-        p50Latency: Math.round(parseFloat(row.p50_latency || '0') * 100) / 100,
-        p90Latency: Math.round(parseFloat(row.p90_latency || '0') * 100) / 100,
-        p95Latency: Math.round(parseFloat(row.p95_latency || '0') * 100) / 100,
-        p99Latency: Math.round(parseFloat(row.p99_latency || '0') * 100) / 100,
-      },
-    });
+    const stats = {
+      totalRequests,
+      errorCount,
+      errorRate: Math.round(errorRate * 100) / 100,
+      avgLatency: Math.round(parseFloat(row.avg_latency || '0') * 100) / 100,
+      p50Latency: Math.round(parseFloat(row.p50_latency || '0') * 100) / 100,
+      p90Latency: Math.round(parseFloat(row.p90_latency || '0') * 100) / 100,
+      p95Latency: Math.round(parseFloat(row.p95_latency || '0') * 100) / 100,
+      p99Latency: Math.round(parseFloat(row.p99_latency || '0') * 100) / 100,
+    };
+
+    const ttl = parseInt(process.env.REDIS_TTL_STATS || '60', 10);
+    await cacheService.set(cacheKey, stats, ttl);
+
+    res.setHeader('X-Cache', 'MISS');
+    res.status(200).json({ stats });
   } catch (error) {
     console.error('Error fetching stats:', error);
     res.status(500).json({

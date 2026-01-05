@@ -19,6 +19,23 @@ services:
     networks:
       - autotrace-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: autotrace-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - autotrace-network
+    restart: unless-stopped
+
   ingestion:
     build:
       context: .
@@ -28,6 +45,14 @@ services:
       - "4000:4000"
     environment:
       DATABASE_URL: postgresql://autotrace_user:autotrace_pass@postgres:5432/autotrace
+      REDIS_URL: redis://redis:6379
+      REDIS_TTL_STATS: 60
+      REDIS_TTL_METRICS: 60
+      REDIS_TTL_ROUTES: 60
+      REDIS_TTL_DISTRIBUTION: 60
+      REDIS_TTL_SERVICES: 120
+      REDIS_TTL_ANOMALIES: 60
+      REDIS_ENABLED: true
       PORT: 4000
       NODE_ENV: development
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:4000,http://dashboard:3000
@@ -47,6 +72,8 @@ services:
       REALTIME_ANOMALY_MIN_DATA_POINTS: 5
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - autotrace-network
@@ -71,6 +98,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  redis-data:
     driver: local
 
 networks:

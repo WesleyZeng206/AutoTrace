@@ -3,6 +3,9 @@ import { requireAuth } from '../middleware/auth';
 import { storageService } from '../services/storage';
 import { RealtimeAnomalyDetector } from '../services/realtimeAnomalyDetector';
 import { anomalyConfig } from '../config/anomalyConfig';
+import { cacheService } from '../services/cache';
+import { CacheKeys } from '../utils/cacheKeys';
+import { normalizeWindow } from '../utils/timeWindow';
 
 export const anomaliesRealtimeRouter = Router();
 
@@ -101,6 +104,34 @@ anomaliesRealtimeRouter.get('/', requireAuth(storageService.pool), async (req: R
       }
     }
 
+    const { start: normalizedStart, end: normalizedEnd } = normalizeWindow(startTime, endTime);
+
+    const cacheKey = CacheKeys.anomalies(
+      teamId,
+      normalizedStart.toISOString(),
+      normalizedEnd.toISOString(),
+      windowHours,
+      severity as string | undefined
+    );
+
+    const cached = await cacheService.get<any[]>(cacheKey);
+    if (cached) {
+      const limitedCached = cached.slice(0, limit);
+      res.setHeader('X-Cache', 'HIT');
+      return res.status(200).json({
+        anomalies: limitedCached,
+        count: limitedCached.length,
+        filters: {
+          teamId,
+          startTime: normalizedStart.toISOString(),
+          endTime: normalizedEnd.toISOString(),
+          windowHours,
+          severity: severity || null,
+          minRequests,
+        },
+      });
+    }
+
     const anomalies = await detector.detectAnomalies({
       teamId,
       startTime,
@@ -111,15 +142,19 @@ anomaliesRealtimeRouter.get('/', requireAuth(storageService.pool), async (req: R
       severity: severity as 'info' | 'warning' | 'critical' | undefined,
     });
 
+    const ttl = parseInt(process.env.REDIS_TTL_ANOMALIES || '60', 10);
+    await cacheService.set(cacheKey, anomalies, ttl);
+
     const limitedAnomalies = anomalies.slice(0, limit);
 
+    res.setHeader('X-Cache', 'MISS');
     res.status(200).json({
       anomalies: limitedAnomalies,
       count: limitedAnomalies.length,
       filters: {
         teamId,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
+        startTime: normalizedStart.toISOString(),
+        endTime: normalizedEnd.toISOString(),
         windowHours,
         severity: severity || null,
         minRequests,
