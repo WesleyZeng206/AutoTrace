@@ -4,18 +4,19 @@ const steps = [ {
     icon: Package,
     title: 'Install the Package',
     description: 'Add our NPM package to your project with a single command. Compatible with all modern JavaScript frameworks.',
-    code: 'npm install autotrace-client',
+    code: 'npm install @wesleyzeng206/autotrace',
   },
   {
     icon: Settings,
     title: 'Configure & Initialize',
     description: 'Initialize the tracker with your API key. Customize what metrics you want to track and set up your preferences.',
-    code: `import { AutoTrace } from 'autotrace-client';
+    code: `import { createAutoTraceMiddleware } from '@wesleyzeng206/autotrace';
 
-AutoTrace.init({
-  apiKey: 'your-api-key',
-  endpoint: 'https://your-domain.com'
-});`,
+app.use(createAutoTraceMiddleware({
+  serviceName: 'my-service',
+  ingestionUrl: 'http://localhost:4000',
+  apiKey: 'your-api-key'
+}));`,
   },
   {
     icon: LineChart,

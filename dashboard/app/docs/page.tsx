@@ -98,21 +98,21 @@ export default function Documentation() {
                   <div>
                     <h3 className="font-medium mb-2">NPM</h3>
                     <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                      <code>npm install autotrace</code>
+                      <code>npm install @wesleyzeng206/autotrace</code>
                     </pre>
                   </div>
 
                   <div>
                     <h3 className="font-medium mb-2">Yarn</h3>
                     <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                      <code>yarn add autotrace</code>
+                      <code>yarn add @wesleyzeng206/autotrace</code>
                     </pre>
                   </div>
 
                   <div>
                     <h3 className="font-medium mb-2">PNPM</h3>
                     <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                      <code>pnpm add autotrace</code>
+                      <code>pnpm add @wesleyzeng206/autotrace</code>
                     </pre>
                   </div>
                 </div>
@@ -137,7 +137,7 @@ export default function Documentation() {
                 </p>
                 <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
                   <code>{`import express from 'express';
-import { createAutoTraceMiddleware } from 'autotrace';
+import { createAutoTraceMiddleware } from '@wesleyzeng206/autotrace';
 
 const app = express();
 
@@ -200,7 +200,7 @@ app.listen(3000, () => {
                   To track errors, add the error handler after your routes:
                 </p>
                 <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                  <code>{`import { createAutoTraceMiddleware, createAutoTraceErrorHandler } from 'autotrace';
+                  <code>{`import { createAutoTraceMiddleware, createAutoTraceErrorHandler } from '@wesleyzeng206/autotrace';
 
 const config = {
   serviceName: 'my-service',
@@ -642,7 +642,7 @@ app.use(createAutoTraceErrorHandler(config));`}</code>
                   Sample requests to reduce telemetry volume:
                 </p>
                 <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                  <code>{`import { createAutoTraceMiddleware } from 'autotrace';
+                  <code>{`import { createAutoTraceMiddleware } from '@wesleyzeng206/autotrace';
 
 app.use(createAutoTraceMiddleware({
   serviceName: 'my-service',
@@ -746,7 +746,7 @@ AUTOTRACE_BATCH_INTERVAL=5000
 AUTOTRACE_SAMPLING_RATE=1.0
 
 // In your application
-import { createAutoTraceMiddleware } from 'autotrace';
+import { createAutoTraceMiddleware } from '@wesleyzeng206/autotrace';
 
 app.use(createAutoTraceMiddleware({
   apiKey: process.env.AUTOTRACE_API_KEY,
@@ -807,7 +807,7 @@ app.use(createAutoTraceMiddleware({
                   AutoTrace SDK can keep telemetry safe on disk whenever networks or deploys interrupt delivery. Enable it via <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">persistentQueue</code>.
                 </p>
                 <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                  <code>{`import { createAutoTraceMiddleware } from 'autotrace';
+                  <code>{`import { createAutoTraceMiddleware } from '@wesleyzeng206/autotrace';
 
 app.use(createAutoTraceMiddleware({
   serviceName: 'checkout-api',

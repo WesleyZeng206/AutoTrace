@@ -1,10 +1,11 @@
 {
-  "name": "autotrace",
+  "name": "@wesleyzeng206/autotrace",
   "version": "0.1.0",
   "description": "A lightweight instrumentation middleware for Express.js services",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "files": ["dist","README.md", "LICENSE"],
   "scripts": {
     "build": "tsc",
     "test": "jest",
@@ -18,10 +19,25 @@
     "logging",
     "instrumentation",
     "observability",
-    "monitoring"
+    "monitoring",
+    "apm",
+    "performance",
+    "tracing"
   ],
-  "author": "",
+  "author": "Wesley",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WesleyZeng206/AutoTrace.git",
+    "directory": "client"
+  },
+  "homepage": "https://github.com/WesleyZeng206/AutoTrace#readme",
+  "bugs": {
+    "url": "https://github.com/WesleyZeng206/AutoTrace/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {
     "axios": "^1.6.0",
     "uuid": "^9.0.0"

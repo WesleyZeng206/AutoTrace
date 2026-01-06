@@ -42,7 +42,7 @@ export function Hero() {
             <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-emerald-400 p-4 rounded-lg font-mono shadow-lg border border-slate-700">
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">$</span>
-                <span>npm install autotrace-client</span>
+                <span>npm install @wesleyzeng206/autotrace</span>
               </div>
             </div>
 
