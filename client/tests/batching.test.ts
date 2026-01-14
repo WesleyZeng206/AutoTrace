@@ -1,8 +1,8 @@
 import { EventBatcher } from '../src/batching';
-import { TelemetryEvent, AutoTraceConfig } from '../src/types';
+import { TelemetryEvent, AutoTraceSDKConfig } from '../src/types';
 
 describe('EventBatcher', () => {
-  let config: AutoTraceConfig;
+  let config: AutoTraceSDKConfig;
 
   let mockSendFunction: jest.Mock<Promise<boolean>, [TelemetryEvent[]]>;
 
@@ -396,7 +396,7 @@ describe('EventBatcher', () => {
       debugBatcher.add(event); // Duplicate
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('AutoTrace: Skipping duplicate event')
+        expect.stringContaining('AutoTraceSDK: Skipping duplicate event')
       );
 
       consoleSpy.mockRestore();

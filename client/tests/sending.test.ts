@@ -1,4 +1,4 @@
-import { TelemetryEvent, AutoTraceConfig } from '../src/types';
+import { TelemetryEvent, AutoTraceSDKConfig } from '../src/types';
 
 let createSender: typeof import('../src/sending').createSender;
 let mockFetch: jest.MockedFunction<typeof fetch>;
@@ -17,7 +17,7 @@ const loadSender = (withFetch: boolean = true) => {
 };
 
 describe('HTTP Sender', () => {
-  let config: AutoTraceConfig;
+  let config: AutoTraceSDKConfig;
   const createMockEvent = (requestId: string = 'test-id'): TelemetryEvent => ({
     request_id: requestId,
     service_name: 'test-service',
@@ -316,7 +316,7 @@ describe('HTTP Sender', () => {
 
       expect(result).toBe(false);
       expect(mockFetch).not.toHaveBeenCalled();
-      expect(consoleSpy).toHaveBeenCalledWith('AutoTrace: Circuit breaker is open, rejecting the request');
+      expect(consoleSpy).toHaveBeenCalledWith('AutoTraceSDK: Circuit breaker is open, rejecting the request');
 
       consoleSpy.mockRestore();
     }, 30000);
@@ -393,7 +393,7 @@ describe('HTTP Sender', () => {
 
       expect(result).toBe(false);
       expect(consoleSpy).toHaveBeenCalledWith(
-        'AutoTrace: global fetch is not available. Telemetry events cannot be sent.'
+        'AutoTraceSDK: global fetch is not available. Telemetry events cannot be sent.'
       );
 
       consoleSpy.mockRestore();
@@ -432,7 +432,7 @@ describe('HTTP Sender', () => {
       await sender(events);
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('AutoTrace: Successfully sent')
+        expect.stringContaining('AutoTraceSDK: Successfully sent')
       );
 
       consoleSpy.mockRestore();
@@ -454,7 +454,7 @@ describe('HTTP Sender', () => {
       await sender(events);
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('AutoTrace: Send attempt')
+        expect.stringContaining('AutoTraceSDK: Send attempt')
       );
 
       consoleSpy.mockRestore();

@@ -1,6 +1,10 @@
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import type { TelemetryEvent } from '@autotrace/telemetry';
 export type { TelemetryEvent } from '@autotrace/telemetry';
+
+export type Extension = (e: TelemetryEvent, req: Request, res: Response) => Record<string, any> | undefined | null;
+
+export type Filter = (e: TelemetryEvent, req: Request, res: Response) => boolean;
 
 export interface RetryOptions {
   /** Maximum retry attempts for HTTP sender */
@@ -96,11 +100,11 @@ export interface PersistentQueueOptions {
 /**
  * Configuration options for th instrumentation middleware
  */
-export interface AutoTraceConfig {
+export interface AutoTraceSDKConfig {
   /** Name of the service (used to identify in dashboard) */
   serviceName: string;
 
-  /** URL of the AutoTrace ingestion service endpoint */
+  /** URL of the AutoTraceSDK ingestion service endpoint */
   ingestionUrl: string;
 
   /** Optional API key for authentication with the ingestion service */
@@ -126,6 +130,10 @@ export interface AutoTraceConfig {
 
   /** Control sampling and filtering of events */
   sampling?: SamplingOptions;
+
+  extensions?: Extension[];
+
+  filters?: Filter[];
 
   /** Persistent queue configuration for offline resilience */
   persistentQueue?: PersistentQueueOptions;

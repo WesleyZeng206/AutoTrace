@@ -1,4 +1,4 @@
-import { TelemetryEvent, AutoTraceConfig } from './types';
+import { TelemetryEvent, AutoTraceSDKConfig } from './types';
 import { PersistentQueue } from './persistence';
 
 /**
@@ -16,7 +16,7 @@ export class EventBatcher {
   private queue: TelemetryEvent[] = [];
 
   private flushTimer: NodeJS.Timeout | null = null;
-  private config: AutoTraceConfig;
+  private config: AutoTraceSDKConfig;
   private batchSize: number;
   private batchInterval: number;
   private enableLocalBuffer: boolean;
@@ -43,7 +43,7 @@ export class EventBatcher {
   private lastRetryTime: number = 0;
 
   constructor(
-    config: AutoTraceConfig, sendFunction: (events: TelemetryEvent[]) => Promise<boolean>
+    config: AutoTraceSDKConfig, sendFunction: (events: TelemetryEvent[]) => Promise<boolean>
   ) {
     this.config = config;
 
@@ -80,7 +80,7 @@ export class EventBatcher {
     // Deduplication check 
     if (this.recentRequestIds.has(event.request_id)) {
       if (this.config.debug) {
-        console.log(`AutoTrace: Skipping duplicate event with request_id: ${event.request_id}`);
+        console.log(`AutoTraceSDK: Skipping duplicate event with request_id: ${event.request_id}`);
       }
       return;
     }
@@ -107,7 +107,7 @@ export class EventBatcher {
   private async autoFlush(): Promise<void> {
     if (this.isFlushing) {
       if (this.config.debug) {
-        console.log('AutoTrace: Flush operation in progress, skipping');
+        console.log('AutoTraceSDK: Flush operation in progress, skipping');
       }
       return;
     }
@@ -128,20 +128,20 @@ export class EventBatcher {
 
           if (successful) {
             if (this.config.debug) {
-              console.log(`AutoTrace: Sent ${events.length} events`);
+              console.log(`AutoTraceSDK: Sent ${events.length} events`);
             }
             break;
           }
 
           if (attempt < this.maxRetries) {
             if (this.config.debug) {
-              console.log(`AutoTrace: Send failed, retrying (${attempt}/${this.maxRetries})`);
+              console.log(`AutoTraceSDK: Send failed, retrying (${attempt}/${this.maxRetries})`);
             }
             await this.sleep(this.retryDelayMs);
           }
         } catch (error) {
           if (this.config.debug) {
-            console.error(`AutoTrace: Send error on attempt ${attempt}:`, error);
+            console.error(`AutoTraceSDK: Send error on attempt ${attempt}:`, error);
           }
 
           if (attempt < this.maxRetries) {
@@ -155,7 +155,7 @@ export class EventBatcher {
           if (this.failedEvents.length < this.maxFailedEvents) {
             this.failedEvents.push(...events);
             if (this.config.debug) {
-              console.warn(`AutoTrace: Failed to send ${events.length} events, saved ${this.failedEvents.length} total failed events`);
+              console.warn(`AutoTraceSDK: Failed to send ${events.length} events, saved ${this.failedEvents.length} total failed events`);
             }
 
             // Persist to disk if buffer is getting full
@@ -163,10 +163,10 @@ export class EventBatcher {
               await this.persistToDisk();
             }
           } else if (this.config.debug) {
-            console.warn(`AutoTrace: Failed to send ${events.length} events and failedEvents queue is full`);
+            console.warn(`AutoTraceSDK: Failed to send ${events.length} events and failedEvents queue is full`);
           }
         } else {
-          console.warn(`AutoTrace: Dropping ${events.length} events because local buffering is disabled`);
+          console.warn(`AutoTraceSDK: Dropping ${events.length} events because local buffering is disabled`);
         }
       }
     } finally {
@@ -219,7 +219,7 @@ export class EventBatcher {
     const eventsToRetry = this.failedEvents.splice(0, this.batchSize);
 
     if (this.config.debug) {
-      console.log(`AutoTrace: Retrying ${eventsToRetry.length} failed events (consecutive failures: ${this.consecutiveFailures})`);
+      console.log(`AutoTraceSDK: Retrying ${eventsToRetry.length} failed events (consecutive failures: ${this.consecutiveFailures})`);
     }
 
     this.isFlushing = true;
@@ -285,7 +285,7 @@ export class EventBatcher {
         }
 
         if (this.config.debug) {
-          console.log(`AutoTrace: Loaded ${valid.length} persisted events (${persisted.length - valid.length} expired)`);
+          console.log(`AutoTraceSDK: Loaded ${valid.length} persisted events (${persisted.length - valid.length} expired)`);
         }
 
         // Clear disk queue after loading
@@ -293,7 +293,7 @@ export class EventBatcher {
       }
     } catch (error) {
       if (this.config.debug) {
-        console.error('AutoTrace: Failed to initialize persistent queue:', error);
+        console.error('AutoTraceSDK: Failed to initialize persistent queue:', error);
       }
       // Disable persistence on error
       this.persistentQueue = null;
@@ -314,11 +314,11 @@ export class EventBatcher {
       this.failedEvents = [];
 
       if (this.config.debug) {
-        console.log(`AutoTrace: Persisted ${toPersist.length} events to disk`);
+        console.log(`AutoTraceSDK: Persisted ${toPersist.length} events to disk`);
       }
     } catch (error) {
       if (this.config.debug) {
-        console.error('AutoTrace: Failed to persist events:', error);
+        console.error('AutoTraceSDK: Failed to persist events:', error);
       }
     }
   }
@@ -373,7 +373,7 @@ export class EventBatcher {
       await this.persistentQueue.shutdown();
     } catch (error) {
       if (this.config.debug) {
-        console.error('AutoTrace: Error during shutdown:', error);
+        console.error('AutoTraceSDK: Error during shutdown:', error);
       }
     }
   }

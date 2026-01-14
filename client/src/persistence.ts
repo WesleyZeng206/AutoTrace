@@ -65,11 +65,11 @@ export class PersistentQueue {
       this.initialized = true;
 
       if (this.debug) {
-        console.log(`AutoTrace: Persistent queue ready at ${this.queueDir}`);
+        console.log(`AutoTraceSDK: Persistent queue ready at ${this.queueDir}`);
       }
     } catch (error: any) {
       if (this.debug) {
-        console.error('AutoTrace: Failed to initialize persistent queue:', error.message);
+        console.error('AutoTraceSDK: Failed to initialize persistent queue:', error.message);
       }
       this.persistenceDisabled = true;
       throw error;
@@ -87,7 +87,7 @@ export class PersistentQueue {
       this.writeTimer = setTimeout(() => {
         this.flushBuffer().catch(err => {
           if (this.debug) {
-            console.error('AutoTrace: Error flushing write buffer:', err);
+            console.error('AutoTraceSDK: Error flushing write buffer:', err);
           }
         });
       }, this.persistInterval);
@@ -102,7 +102,7 @@ export class PersistentQueue {
     const { events, corrupted } = await this.readEventsFromDisk(this.maxSize);
 
     if (corrupted > 0 && this.debug) {
-      console.warn(`AutoTrace: Skipped ${corrupted} corrupted events from persistent queue`);
+      console.warn(`AutoTraceSDK: Skipped ${corrupted} corrupted events from persistent queue`);
     }
 
     if (corrupted > 0 && corrupted > events.length * 0.1) {
@@ -111,12 +111,12 @@ export class PersistentQueue {
       await this.rebuildMetadataFromDisk();
 
       if (this.debug) {
-        console.warn(`AutoTrace: Backed up corrupted queue file to ${backupFile}`);
+        console.warn(`AutoTraceSDK: Backed up corrupted queue file to ${backupFile}`);
       }
     }
 
     if (this.debug && events.length > 0) {
-      console.log(`AutoTrace: Loaded ${events.length} events from persistent queue`);
+      console.log(`AutoTraceSDK: Loaded ${events.length} events from persistent queue`);
     }
 
     return events;
@@ -140,7 +140,7 @@ export class PersistentQueue {
     await this.resetMetadata();
 
     if (this.debug) {
-      console.log('AutoTrace: Persistent queue cleared');
+      console.log('AutoTraceSDK: Persistent queue cleared');
     }
   }
 
@@ -167,7 +167,7 @@ export class PersistentQueue {
     }
 
     if (this.debug) {
-      console.log('AutoTrace: Persistent queue shutdown complete');
+      console.log('AutoTraceSDK: Persistent queue shutdown complete');
     }
   }
 
@@ -197,7 +197,7 @@ export class PersistentQueue {
       let newCapacity = Math.max(this.maxSize - this.persistedCount, 0);
       if (newCapacity <= 0) {
         if (this.debug) {
-          console.warn('AutoTrace: Persistent queue full, dropping new events');
+          console.warn('AutoTraceSDK: Persistent queue full, dropping new events');
         }
         return;
       }
@@ -209,22 +209,22 @@ export class PersistentQueue {
       await this.writeMetadata();
 
       if (this.debug) {
-        console.log(`AutoTrace: Persisted ${toPersist.length} events to disk`);
+        console.log(`AutoTraceSDK: Persisted ${toPersist.length} events to disk`);
       }
 
       if (eventsToWrite.length > toPersist.length && this.debug) {
         console.warn(
-          `AutoTrace: Dropped ${eventsToWrite.length - toPersist.length} events after trimming queue`
+          `AutoTraceSDK: Dropped ${eventsToWrite.length - toPersist.length} events after trimming queue`
         );
       }
     } catch (error: any) {
       if (error.code === 'ENOSPC' || error.code === 'EACCES') {
         this.persistenceDisabled = true;
         if (this.debug) {
-          console.error(`AutoTrace: ${error.code === 'ENOSPC' ? 'Disk full' : 'Permission denied'}, disabling persistent queue`);
+          console.error(`AutoTraceSDK: ${error.code === 'ENOSPC' ? 'Disk full' : 'Permission denied'}, disabling persistent queue`);
         }
       } else if (this.debug) {
-        console.error('AutoTrace: Failed to flush write buffer:', error.message);
+        console.error('AutoTraceSDK: Failed to flush write buffer:', error.message);
       }
     }
   }
@@ -260,7 +260,7 @@ export class PersistentQueue {
         return { events: [], corrupted: 0 };
       }
       if (this.debug) {
-        console.error('AutoTrace: Failed to load persistent queue:', error.message);
+        console.error('AutoTraceSDK: Failed to load persistent queue:', error.message);
       }
     }
 
@@ -331,7 +331,7 @@ export class PersistentQueue {
       }
     } catch (error: any) {
       if (error.code !== 'ENOENT' && this.debug) {
-        console.warn('AutoTrace: Failed to rebuild queue metadata:', error.message);
+        console.warn('AutoTraceSDK: Failed to rebuild queue metadata:', error.message);
       }
     }
 
@@ -369,7 +369,7 @@ export class PersistentQueue {
       await fs.writeFile(this.metaFile, JSON.stringify(this.metadata, null, 2), 'utf-8');
     } catch (error: any) {
       if (this.debug) {
-        console.warn('AutoTrace: Failed to update metadata:', error.message);
+        console.warn('AutoTraceSDK: Failed to update metadata:', error.message);
       }
     }
   }

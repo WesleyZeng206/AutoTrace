@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { createAutoTraceMiddleware, createAutoTraceErrorHandler } from '../src/middleware';
-import { AutoTraceConfig } from '../src/types';
+import { createAutoTraceSDKMiddleware, createAutoTraceSDKErrorHandler } from '../src/middleware';
+import { AutoTraceSDKConfig } from '../src/types';
 
 // Mock dependencies
 jest.mock('../src/sending');
@@ -9,8 +9,8 @@ jest.mock('../src/batching');
 import { createSender } from '../src/sending';
 import { EventBatcher } from '../src/batching';
 
-describe('AutoTrace Middleware', () => {
-  let config: AutoTraceConfig;
+describe('AutoTraceSDK Middleware', () => {
+  let config: AutoTraceSDKConfig;
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
   let nextFunction: NextFunction;
@@ -71,21 +71,21 @@ describe('AutoTrace Middleware', () => {
     jest.clearAllMocks();
   });
 
-  describe('createAutoTraceMiddleware', () => {
+  describe('createAutoTraceSDKMiddleware', () => {
     it('should create middleware function', () => {
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       expect(typeof middleware).toBe('function');
     });
 
     it('should call next() immediately', () => {
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
       expect(nextFunction).toHaveBeenCalledTimes(1);
     });
 
     it('should capture telemetry on response finish', () => {
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
       // Simulate response finish
@@ -106,7 +106,7 @@ describe('AutoTrace Middleware', () => {
     });
 
     it('should capture telemetry on response close', () => {
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
       (mockResponse as any).emit('close');
@@ -115,7 +115,7 @@ describe('AutoTrace Middleware', () => {
     });
 
     it('should only log event once when both finish and close fire', () => {
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
       (mockResponse as any).emit('finish');
@@ -132,7 +132,7 @@ describe('AutoTrace Middleware', () => {
         route: undefined,
       } as Request;
 
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
       (mockResponse as any).emit('finish');
@@ -147,7 +147,7 @@ describe('AutoTrace Middleware', () => {
     it('should capture HTTP errors for 4xx status codes', () => {
       mockResponse.statusCode = 404;
 
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
       (mockResponse as any).emit('finish');
@@ -164,7 +164,7 @@ describe('AutoTrace Middleware', () => {
     it('should capture HTTP errors for 5xx status codes', () => {
       mockResponse.statusCode = 500;
 
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
       (mockResponse as any).emit('finish');
@@ -185,7 +185,7 @@ describe('AutoTrace Middleware', () => {
         errorMessage: 'Invalid input',
       };
 
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
       (mockResponse as any).emit('finish');
@@ -205,7 +205,7 @@ describe('AutoTrace Middleware', () => {
         errorMessage: 'Payment failed but request succeeded',
       };
 
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
       (mockResponse as any).emit('finish');
@@ -222,7 +222,7 @@ describe('AutoTrace Middleware', () => {
     describe('sampling behavior', () => {
       it('should drop events when the sampling rate is 0', () => {
         config.sampling = { samplingRate: 0 };
-        const middleware = createAutoTraceMiddleware(config);
+        const middleware = createAutoTraceSDKMiddleware(config);
         middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
         (mockResponse as any).emit('finish');
@@ -234,7 +234,7 @@ describe('AutoTrace Middleware', () => {
         config.sampling = { samplingRate: 0 };
         mockResponse.statusCode = 500;
 
-        const middleware = createAutoTraceMiddleware(config);
+        const middleware = createAutoTraceSDKMiddleware(config);
         middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
         (mockResponse as any).emit('finish');
@@ -246,7 +246,7 @@ describe('AutoTrace Middleware', () => {
         jest.useFakeTimers();
         config.sampling = { samplingRate: 0, alwaysSampleSlow: 100 };
 
-        const middleware = createAutoTraceMiddleware(config);
+        const middleware = createAutoTraceSDKMiddleware(config);
         middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
         jest.advanceTimersByTime(200);
@@ -262,7 +262,7 @@ describe('AutoTrace Middleware', () => {
           routeRules: [{ pattern: '/test', rate: 1 }],
         };
 
-        const middleware = createAutoTraceMiddleware(config);
+        const middleware = createAutoTraceSDKMiddleware(config);
         middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
         (mockResponse as any).emit('finish');
@@ -276,7 +276,7 @@ describe('AutoTrace Middleware', () => {
           customSampler: () => false,
         };
 
-        const middleware = createAutoTraceMiddleware(config);
+        const middleware = createAutoTraceSDKMiddleware(config);
         middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
         (mockResponse as any).emit('finish');
@@ -290,7 +290,7 @@ describe('AutoTrace Middleware', () => {
           prioritySampler: () => 200,
         };
 
-        const middleware = createAutoTraceMiddleware(config);
+        const middleware = createAutoTraceSDKMiddleware(config);
         middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
         (mockResponse as any).emit('finish');
@@ -306,7 +306,7 @@ describe('AutoTrace Middleware', () => {
         errorMessage: '',
       };
 
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
       (mockResponse as any).emit('finish');
@@ -330,7 +330,7 @@ describe('AutoTrace Middleware', () => {
         }
       });
 
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
 
       middleware(mockRequest as Request, mockResponse as Response, throwingNext);
 
@@ -350,7 +350,7 @@ describe('AutoTrace Middleware', () => {
         })
         .mockImplementation(() => undefined);
 
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, throwingNext);
 
       (mockResponse as any).emit('finish');
@@ -365,8 +365,8 @@ describe('AutoTrace Middleware', () => {
     });
 
     it('should capture errors reported via error handler even for successful responses', () => {
-      const middleware = createAutoTraceMiddleware(config);
-      const errorHandler = createAutoTraceErrorHandler(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
+      const errorHandler = createAutoTraceSDKErrorHandler(config);
 
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
@@ -387,7 +387,7 @@ describe('AutoTrace Middleware', () => {
     it('should measure request duration accurately', async () => {
       jest.useFakeTimers();
 
-      const middleware = createAutoTraceMiddleware(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
 
       // Advance time by 250ms
@@ -405,12 +405,12 @@ describe('AutoTrace Middleware', () => {
     });
   });
 
-  describe('createAutoTraceErrorHandler', () => {
-    let errorHandler: ReturnType<typeof createAutoTraceErrorHandler>;
+  describe('createAutoTraceSDKErrorHandler', () => {
+    let errorHandler: ReturnType<typeof createAutoTraceSDKErrorHandler>;
     let error: Error;
 
     beforeEach(() => {
-      errorHandler = createAutoTraceErrorHandler(config);
+      errorHandler = createAutoTraceSDKErrorHandler(config);
       error = new Error('Test error');
       error.name = 'TestError';
     });
@@ -454,11 +454,11 @@ describe('AutoTrace Middleware', () => {
     it('should log error when debug is enabled', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
       const debugConfig = { ...config, debug: true };
-      const debugErrorHandler = createAutoTraceErrorHandler(debugConfig);
+      const debugErrorHandler = createAutoTraceSDKErrorHandler(debugConfig);
 
       debugErrorHandler(error, mockRequest as Request, mockResponse as Response, nextFunction);
 
-      expect(consoleSpy).toHaveBeenCalledWith('AutoTrace caught error:', error);
+      expect(consoleSpy).toHaveBeenCalledWith('AutoTraceSDK caught error:', error);
 
       consoleSpy.mockRestore();
     });
@@ -476,8 +476,8 @@ describe('AutoTrace Middleware', () => {
 
   describe('Integration: Middleware + Error Handler', () => {
     it('should work together to capture errors', () => {
-      const middleware = createAutoTraceMiddleware(config);
-      const errorHandler = createAutoTraceErrorHandler(config);
+      const middleware = createAutoTraceSDKMiddleware(config);
+      const errorHandler = createAutoTraceSDKErrorHandler(config);
 
       // Set up middleware
       middleware(mockRequest as Request, mockResponse as Response, nextFunction);
@@ -496,6 +496,302 @@ describe('AutoTrace Middleware', () => {
           error_message: 'Integration test error',
         })
       );
+    });
+  });
+
+  describe('Extensions', () => {
+    it('should add metadata from extensions', () => {
+      const ext1 = jest.fn(() => ({ userId: '123' }));
+      const ext2 = jest.fn(() => ({ tenantId: 'abc' }));
+      config.extensions = [ext1, ext2];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(ext1).toHaveBeenCalled();
+      expect(ext2).toHaveBeenCalled();
+      expect(mockBatcherAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ metadata: { userId: '123', tenantId: 'abc' } })
+      );
+    });
+
+    it('should handle null and undefined returns', () => {
+      config.extensions = [() => undefined, () => ({ userId: '456' }), () => null];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ metadata: { userId: '456' } })
+      );
+    });
+
+    it('should merge data from multiple extensions', () => {
+      config.extensions = [
+        () => ({ userId: '123', role: 'admin' }),
+        () => ({ tenantId: 'xyz' }),
+        () => ({ source: 'mobile' }),
+      ];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: { userId: '123', role: 'admin', tenantId: 'xyz', source: 'mobile' }
+        })
+      );
+    });
+
+    it('should allow later extensions to override', () => {
+      config.extensions = [() => ({ userId: '123' }), () => ({ userId: '456' })];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ metadata: { userId: '456' } })
+      );
+    });
+
+    it('should catch errors without crashing', () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation();
+      const working = jest.fn(() => ({ userId: '789' }));
+      const broken = jest.fn(() => { throw new Error('Test error'); });
+      config.extensions = [broken, working];
+      config.debug = true;
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(spy).toHaveBeenCalledWith('AutoTraceSDK: Extension error:', expect.any(Error));
+      expect(mockBatcherAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ metadata: { userId: '789' } })
+      );
+      spy.mockRestore();
+    });
+
+    it('should not log errors when debug is false', () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation();
+      config.extensions = [() => { throw new Error('Silent'); }];
+      config.debug = false;
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('should not add metadata if extensions return nothing', () => {
+      config.extensions = [() => undefined, () => null, () => ({})];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      const evt = mockBatcherAdd.mock.calls[0][0];
+      expect(evt.metadata).toBeUndefined();
+    });
+
+    it('should work without extensions', () => {
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).toHaveBeenCalledWith(
+        expect.not.objectContaining({ metadata: expect.anything() })
+      );
+    });
+
+    it('should access request headers', () => {
+      mockRequest.headers = { 'user-agent': 'Mozilla', 'x-tenant': 'abc' };
+      config.extensions = [(_e, req) => ({
+        ua: req.headers['user-agent'],
+        tenant: req.headers['x-tenant']
+      })];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ metadata: { ua: 'Mozilla', tenant: 'abc' } })
+      );
+    });
+
+    it('should access event fields', () => {
+      mockResponse.statusCode = 404;
+      config.extensions = [(e) => ({
+        isError: e.status_code >= 400,
+        routeMethod: `${e.method} ${e.route}`
+      })];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: { isError: true, routeMethod: 'GET /test' }
+        })
+      );
+    });
+  });
+
+  describe('Filters', () => {
+    it('should exclude events when filter returns false', () => {
+      config.filters = [(e) => e.route !== '/health'];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      mockRequest.route = { path: '/health' } as any;
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).not.toHaveBeenCalled();
+    });
+
+    it('should include events when all filters return true', () => {
+      config.filters = [
+        (e) => e.route !== '/health',
+        (e) => e.status_code < 500
+      ];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).toHaveBeenCalled();
+    });
+
+    it('should stop at first filter that returns false', () => {
+      const f1 = jest.fn(() => false);
+      const f2 = jest.fn(() => true);
+      config.filters = [f1, f2];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(f1).toHaveBeenCalled();
+      expect(f2).not.toHaveBeenCalled();
+      expect(mockBatcherAdd).not.toHaveBeenCalled();
+    });
+
+    it('should filter by route pattern', () => {
+      config.filters = [(e) => !e.route.startsWith('/health')];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      mockRequest.route = { path: '/health/check' } as any;
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).not.toHaveBeenCalled();
+    });
+
+    it('should filter by status code', () => {
+      config.filters = [(e) => e.status_code >= 400];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      mockResponse.statusCode = 200;
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).not.toHaveBeenCalled();
+    });
+
+    it('should filter by request method', () => {
+      config.filters = [(_e, req) => req.method !== 'OPTIONS'];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      mockRequest.method = 'OPTIONS';
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).not.toHaveBeenCalled();
+    });
+
+    it('should catch filter errors without crashing', () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation();
+      const broken = jest.fn(() => { throw new Error('Filter error'); });
+      const working = jest.fn(() => true);
+      config.filters = [broken, working];
+      config.debug = true;
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(spy).toHaveBeenCalledWith('AutoTraceSDK: Filter error:', expect.any(Error));
+      expect(working).toHaveBeenCalled();
+      expect(mockBatcherAdd).toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('should not log filter errors when debug is false', () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation();
+      config.filters = [() => { throw new Error('Silent'); }];
+      config.debug = false;
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('should work without filters', () => {
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).toHaveBeenCalled();
+    });
+
+    it('should combine multiple filter conditions', () => {
+      config.filters = [
+        (e) => e.route !== '/health',
+        (e) => e.route !== '/metrics',
+        (_e, req) => req.method !== 'OPTIONS'
+      ];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      mockRequest.route = { path: '/api/users' } as any;
+      mockRequest.method = 'GET';
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).toHaveBeenCalled();
+    });
+
+    it('should run filters before sampling', () => {
+      config.filters = [(e) => e.route !== '/health'];
+      config.sampling = { samplingRate: 1.0 };
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      mockRequest.route = { path: '/health' } as any;
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).not.toHaveBeenCalled();
+    });
+
+    it('should access event metadata from extensions', () => {
+      config.extensions = [(_e) => ({ custom: 'value' })];
+      config.filters = [(e) => e.metadata?.custom === 'value'];
+
+      const middleware = createAutoTraceSDKMiddleware(config);
+      middleware(mockRequest as Request, mockResponse as Response, nextFunction);
+      (mockResponse as any).emit('finish');
+
+      expect(mockBatcherAdd).toHaveBeenCalled();
     });
   });
 });

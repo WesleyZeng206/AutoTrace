@@ -1,7 +1,7 @@
 {
-  "name": "@wesleyzeng206/autotrace",
+  "name": "autotracesdk",
   "version": "0.1.0",
-  "description": "A lightweight instrumentation middleware for Express.js services",
+  "description": "Express middleware that captures request telemetry, latency, and errors.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -28,12 +28,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/WesleyZeng206/AutoTrace.git",
+    "url": "https://github.com/WesleyZeng206/AutoTraceSDK.git",
     "directory": "client"
   },
-  "homepage": "https://github.com/WesleyZeng206/AutoTrace#readme",
+  "homepage": "https://github.com/WesleyZeng206/AutoTraceSDK#readme",
   "bugs": {
-    "url": "https://github.com/WesleyZeng206/AutoTrace/issues"
+    "url": "https://github.com/WesleyZeng206/AutoTraceSDK/issues"
   },
   "engines": {
     "node": ">=16.0.0"

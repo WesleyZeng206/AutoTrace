@@ -1,7 +1,7 @@
 {
   "name": "autotrace-ingestion",
   "version": "1.0.0",
-  "description": "AutoTrace ingestion service for telemetry data",
+  "description": "AutoTraceSDK ingestion service for telemetry data",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

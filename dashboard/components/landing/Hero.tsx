@@ -42,7 +42,7 @@ export function Hero() {
             <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-emerald-400 p-4 rounded-lg font-mono shadow-lg border border-slate-700">
               <div className="flex items-center gap-2">
                 <span className="text-gray-500">$</span>
-                <span>npm install @wesleyzeng206/autotrace</span>
+                <span>npm install autotracesdk</span>
               </div>
             </div>
 
@@ -51,7 +51,7 @@ export function Hero() {
                 View Dashboard
                 <ArrowRight className="w-5 h-5" />
               </Link>
-              <a href="https://github.com/WesleyZeng206/AutoTrace" target="_blank" rel="noopener noreferrer" className="px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-lg hover:border-slate-400 hover:bg-slate-50 transition-all">
+              <a href="https://github.com/WesleyZeng206/AutoTraceSDK" target="_blank" rel="noopener noreferrer" className="px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-lg hover:border-slate-400 hover:bg-slate-50 transition-all">
                 Documentation
               </a>
             </div>

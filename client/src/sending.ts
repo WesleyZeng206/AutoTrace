@@ -1,5 +1,5 @@
 
-import { TelemetryEvent, AutoTraceConfig } from './types';
+import { TelemetryEvent, AutoTraceSDKConfig } from './types';
 
 type FetchFn = (input: string, init?: any) => Promise<Response>;
 
@@ -43,7 +43,7 @@ interface CircuitBreakerState {
  * Creates a sender function that can be passed to the EventBatcher
  * Sender function returns a promise of a boolean
  */
-export function createSender(config: AutoTraceConfig): (events: TelemetryEvent[]) => Promise<boolean> {
+export function createSender(config: AutoTraceSDKConfig): (events: TelemetryEvent[]) => Promise<boolean> {
   let circuitState = createInitialCircuitState();
   const circuitThreshold = CIRCUIT_THRESHOLD;
   const circuitResetMs = CIRCUIT_RESET_MS;
@@ -55,7 +55,7 @@ export function createSender(config: AutoTraceConfig): (events: TelemetryEvent[]
   const jitterMs = sanitizeNonNegativeNumber(retryOptions.jitterMs, JITTER_MS);
 
   if (!runtimeFetch && config.debug) {
-    console.warn('AutoTrace: global fetch is not available. Telemetry events cannot be sent.');
+    console.warn('AutoTraceSDK: global fetch is not available. Telemetry events cannot be sent.');
   }
 
   return async (events: TelemetryEvent[]): Promise<boolean> => {
@@ -69,7 +69,7 @@ export function createSender(config: AutoTraceConfig): (events: TelemetryEvent[]
 
     if (!shouldAllowRequest(circuitState, circuitResetMs)) {
       if (config.debug) {
-        console.log('AutoTrace: Circuit breaker is open, rejecting the request');
+        console.log('AutoTraceSDK: Circuit breaker is open, rejecting the request');
       }
       return false;
     }
@@ -84,13 +84,13 @@ export function createSender(config: AutoTraceConfig): (events: TelemetryEvent[]
       if (result.success) {
         circuitState = updateCircuitState(circuitState, true, circuitThreshold);
         if (config.debug) {
-          console.log(`AutoTrace: Successfully sent ${events.length} events`);
+          console.log(`AutoTraceSDK: Successfully sent ${events.length} events`);
         }
         return true;
       }
 
       if (config.debug) {
-        console.log(`AutoTrace: Send attempt ${attempt}/${maxRetries} failed: ${result.error}`);
+        console.log(`AutoTraceSDK: Send attempt ${attempt}/${maxRetries} failed: ${result.error}`);
       }
 
       if (attempt < maxRetries) {

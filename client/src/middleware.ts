@@ -1,17 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import { v4 as generateUUID } from 'uuid';
-import { TelemetryEvent, AutoTraceConfig, SamplingOptions, SamplingContext } from './types';
+import { TelemetryEvent, AutoTraceSDKConfig, SamplingOptions, SamplingContext } from './types';
 import { createSender } from './sending';
 import { EventBatcher } from './batching';
 
-
-//just stash callbacks so GC can do its thing later
 const errorCallbackMap = new WeakMap<Response, (err: Error) => void>();
 
 /**
  * Creates Express middleware that automatically handles all requests
  */
-export function createAutoTraceMiddleware(config: AutoTraceConfig) {
+export function createAutoTraceSDKMiddleware(config: AutoTraceSDKConfig) {
   const sender = createSender(config);
   const batcher = new EventBatcher(config, sender);
 
@@ -58,7 +56,32 @@ export function createAutoTraceMiddleware(config: AutoTraceConfig) {
         event.error_message = '';
       }
 
-      if (shouldSampleEvent(req, event, config.sampling)) {
+      if (config.extensions && config.extensions.length > 0) {
+        const m: Record<string, any> = {}
+        for (const ext of config.extensions) {
+          try {
+            const d = ext(event, req, res)
+            if (d && typeof d === 'object') Object.assign(m, d)
+
+          } catch (err) {
+            if (config.debug) console.error('AutoTraceSDK: Extension error:', err)
+          }
+        }
+        if (Object.keys(m).length > 0) event.metadata = m
+      }
+
+      let blocked = false
+      if (config.filters && config.filters.length > 0) {
+        for (const f of config.filters) {
+          try {
+            if (!f(event, req, res)) { blocked = true; break }
+          } catch (err) {
+            if (config.debug) console.error('AutoTraceSDK: Filter error:', err)
+          }
+        }
+      }
+
+      if (!blocked && shouldSampleEvent(req, event, config.sampling)) {
         batcher.add(event);
       }
       errorCallbackMap.delete(res);
@@ -87,7 +110,7 @@ export function createAutoTraceMiddleware(config: AutoTraceConfig) {
 /**
  * Catches errors and makes sure they get logged to telemetry
  */
-export function createAutoTraceErrorHandler(config: AutoTraceConfig) {
+export function createAutoTraceSDKErrorHandler(config: AutoTraceSDKConfig) {
   return function autoTraceErrorHandler(err: Error, _req: Request, res: Response, next: NextFunction) {
     res.locals.errorType = err.name || 'Error';
     res.locals.errorMessage = err.message || 'Something went wrong';
@@ -98,7 +121,7 @@ export function createAutoTraceErrorHandler(config: AutoTraceConfig) {
     }
 
     if (config.debug) {
-      console.error('AutoTrace caught error:', err);
+      console.error('AutoTraceSDK caught error:', err);
     }
 
     next(err);
@@ -194,9 +217,11 @@ function clampRate(value: number): number {
   if (Number.isNaN(value)) {
     return 0;
   }
+
   if (value < 0) {
     return 0;
   }
+  
   if (value > 1) {
     return 1;
   }
@@ -205,6 +230,7 @@ function clampRate(value: number): number {
 
 function getProbability(input: string): number {
   let hash = 0;
+  
   for (let i = 0; i < input.length; i++) {
     const chr = input.charCodeAt(i);
     hash = (hash << 5) - hash + chr;

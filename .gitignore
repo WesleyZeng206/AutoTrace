@@ -33,3 +33,4 @@ env/
 .venv/
 /ingestion/test-cache.ts
 ENV/
+sample-test-app.js

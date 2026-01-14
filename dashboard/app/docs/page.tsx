@@ -98,21 +98,21 @@ export default function Documentation() {
                   <div>
                     <h3 className="font-medium mb-2">NPM</h3>
                     <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                      <code>npm install @wesleyzeng206/autotrace</code>
+                      <code>npm install autotracesdk</code>
                     </pre>
                   </div>
 
                   <div>
                     <h3 className="font-medium mb-2">Yarn</h3>
                     <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                      <code>yarn add @wesleyzeng206/autotrace</code>
+                      <code>yarn add autotracesdk</code>
                     </pre>
                   </div>
 
                   <div>
                     <h3 className="font-medium mb-2">PNPM</h3>
                     <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                      <code>pnpm add @wesleyzeng206/autotrace</code>
+                      <code>pnpm add autotracesdk</code>
                     </pre>
                   </div>
                 </div>
@@ -137,14 +137,14 @@ export default function Documentation() {
                 </p>
                 <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
                   <code>{`import express from 'express';
-import { createAutoTraceMiddleware } from '@wesleyzeng206/autotrace';
+import { createAutoTraceSDKMiddleware } from 'autotracesdk';
 
 const app = express();
 
 // Add AutoTrace middleware (before your routes)
-app.use(createAutoTraceMiddleware({
+app.use(createAutoTraceSDKMiddleware({
   serviceName: 'my-service',
-  ingestionUrl: 'http://localhost:4000',
+  ingestionUrl: 'http://localhost:4000/telemetry',
   apiKey: 'at_live_your_api_key_here',
 }));
 
@@ -176,7 +176,7 @@ app.listen(3000, () => {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">batchSize</p>
-                    <p className="text-sm text-muted-foreground">Events to collect before sending (default: 100)</p>
+                    <p className="text-sm text-muted-foreground">Events to collect before sending (default: 10)</p>
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">batchInterval</p>
@@ -200,15 +200,15 @@ app.listen(3000, () => {
                   To track errors, add the error handler after your routes:
                 </p>
                 <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                  <code>{`import { createAutoTraceMiddleware, createAutoTraceErrorHandler } from '@wesleyzeng206/autotrace';
+                  <code>{`import { createAutoTraceSDKMiddleware, createAutoTraceSDKErrorHandler } from 'autotracesdk';
 
 const config = {
   serviceName: 'my-service',
-  ingestionUrl: 'http://localhost:4000',
+  ingestionUrl: 'http://localhost:4000/telemetry',
   apiKey: 'at_live_your_api_key_here',
 };
 
-app.use(createAutoTraceMiddleware(config));
+app.use(createAutoTraceSDKMiddleware(config));
 
 // Your routes
 app.get('/api/error', (req, res) => {
@@ -216,7 +216,7 @@ app.get('/api/error', (req, res) => {
 });
 
 // Add error handler at the end (after all routes)
-app.use(createAutoTraceErrorHandler(config));`}</code>
+app.use(createAutoTraceSDKErrorHandler(config));`}</code>
                 </pre>
               </Card>
 
@@ -240,13 +240,13 @@ app.use(createAutoTraceErrorHandler(config));`}</code>
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Dashboard Overview</h2>
                 <p className="text-muted-foreground mb-4">
-                  Dashboard shows real-time data about your app with auto-refresh every 30 seconds.
+                  Dashboard shows recent telemetry for your app. Most panels update when you change the time range or interval, and the anomaly card refreshes every 60 seconds.
                 </p>
                 <div className="space-y-3">
                   <p className="font-medium text-gray-900">Features:</p>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
-                    <li><strong>Auto-refresh:</strong> Updates every 30 seconds</li>
-                    <li><strong>Manual refresh:</strong> Click refresh for instant update</li>
+                    <li><strong>Anomalies auto-refresh:</strong> Updates every 60 seconds</li>
+                    <li><strong>Metrics refresh:</strong> Change time range or interval to reload</li>
                     <li><strong>Time range:</strong> 15 minutes to 7 days</li>
                     <li><strong>Intervals:</strong> 15m, 30m, or 1h aggregation</li>
                     <li><strong>Teams:</strong> Switch teams with the selector</li>
@@ -642,11 +642,11 @@ app.use(createAutoTraceErrorHandler(config));`}</code>
                   Sample requests to reduce telemetry volume:
                 </p>
                 <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                  <code>{`import { createAutoTraceMiddleware } from '@wesleyzeng206/autotrace';
+                  <code>{`import { createAutoTraceSDKMiddleware } from 'autotracesdk';
 
-app.use(createAutoTraceMiddleware({
+app.use(createAutoTraceSDKMiddleware({
   serviceName: 'my-service',
-  ingestionUrl: 'http://localhost:4000',
+  ingestionUrl: 'http://localhost:4000/telemetry',
   apiKey: 'at_live_your_api_key_here',
 
   sampling: {
@@ -681,9 +681,9 @@ app.use(createAutoTraceMiddleware({
                   Set up retries for when telemetry delivery fails:
                 </p>
                 <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                  <code>{`app.use(createAutoTraceMiddleware({
+                  <code>{`app.use(createAutoTraceSDKMiddleware({
   serviceName: 'my-service',
-  ingestionUrl: 'http://localhost:4000',
+  ingestionUrl: 'http://localhost:4000/telemetry',
   apiKey: 'at_live_your_api_key_here',
 
   // HTTP sender retry options
@@ -712,18 +712,18 @@ app.use(createAutoTraceMiddleware({
                 </p>
                 <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
                   <code>{`// High-traffic service (1000+ req/min)
-app.use(createAutoTraceMiddleware({
+app.use(createAutoTraceSDKMiddleware({
   serviceName: 'high-traffic-api',
-  ingestionUrl: 'http://localhost:4000',
+  ingestionUrl: 'http://localhost:4000/telemetry',
   apiKey: 'at_live_your_api_key_here',
   batchSize: 500,          // Larger batches
   batchInterval: 2000,     // Flush every 2 seconds
 }));
 
 // Low-traffic service (<100 req/min)
-app.use(createAutoTraceMiddleware({
+app.use(createAutoTraceSDKMiddleware({
   serviceName: 'low-traffic-api',
-  ingestionUrl: 'http://localhost:4000',
+  ingestionUrl: 'http://localhost:4000/telemetry',
   apiKey: 'at_live_your_api_key_here',
   batchSize: 50,           // Smaller batches
   batchInterval: 10000,    // Flush every 10 seconds
@@ -746,9 +746,9 @@ AUTOTRACE_BATCH_INTERVAL=5000
 AUTOTRACE_SAMPLING_RATE=1.0
 
 // In your application
-import { createAutoTraceMiddleware } from '@wesleyzeng206/autotrace';
+import { createAutoTraceSDKMiddleware } from 'autotracesdk';
 
-app.use(createAutoTraceMiddleware({
+app.use(createAutoTraceSDKMiddleware({
   apiKey: process.env.AUTOTRACE_API_KEY,
   serviceName: process.env.AUTOTRACE_SERVICE_NAME,
   ingestionUrl: process.env.AUTOTRACE_INGESTION_URL,
@@ -807,9 +807,9 @@ app.use(createAutoTraceMiddleware({
                   AutoTrace SDK can keep telemetry safe on disk whenever networks or deploys interrupt delivery. Enable it via <code className="bg-slate-100 px-1 py-0.5 rounded text-xs">persistentQueue</code>.
                 </p>
                 <pre className="bg-slate-900 text-slate-50 p-4 rounded-md overflow-x-auto">
-                  <code>{`import { createAutoTraceMiddleware } from '@wesleyzeng206/autotrace';
+                  <code>{`import { createAutoTraceSDKMiddleware } from 'autotracesdk';
 
-app.use(createAutoTraceMiddleware({
+app.use(createAutoTraceSDKMiddleware({
   serviceName: 'checkout-api',
   ingestionUrl: process.env.AUTOTRACE_URL,
   apiKey: process.env.AUTOTRACE_KEY,
@@ -848,10 +848,10 @@ app.use(createAutoTraceMiddleware({
               <Link href="/team-members" className="block text-blue-600 hover:underline">
                 → Team Management
               </Link>
-              <a href="https://github.com/WesleyZeng206/AutoTrace" target="_blank" rel="noopener noreferrer" className="block text-blue-600 hover:underline">
+              <a href="https://github.com/WesleyZeng206/AutoTraceSDK" target="_blank" rel="noopener noreferrer" className="block text-blue-600 hover:underline">
                 → GitHub Repository
               </a>
-              <a href="https://github.com/WesleyZeng206/AutoTrace/issues" target="_blank" rel="noopener noreferrer" className="block text-blue-600 hover:underline">
+              <a href="https://github.com/WesleyZeng206/AutoTraceSDK/issues" target="_blank" rel="noopener noreferrer" className="block text-blue-600 hover:underline">
                 → Report an Issue
               </a>
             </div>

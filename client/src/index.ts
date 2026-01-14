@@ -3,9 +3,9 @@
  * Entry point to the package is here.
  */
 
-export { createAutoTraceMiddleware, createAutoTraceErrorHandler } from './middleware';
+export { createAutoTraceSDKMiddleware, createAutoTraceSDKErrorHandler } from './middleware';
 
-export type { TelemetryEvent, AutoTraceConfig, PersistentQueueOptions } from './types';
+export type { TelemetryEvent, AutoTraceSDKConfig, PersistentQueueOptions, Extension, Filter } from './types';
 
 export { PersistentQueue } from './persistence';
 

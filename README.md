@@ -1,10 +1,19 @@
 # AutoTrace
 
-A simple observability platform for tracking HTTP requests across your Node.js applications. All you have to do is drop in the middleware, spin up the backend, and get all the services without the complexity of full APM solutions.
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
-## Summary
+A simple program for tracking HTTP requests across your Node.js/Express.js applications. All you have to do is drop in the middleware, start up the backend, and get all the services you need without lots of complexity.
 
-- Express middleware that captures request/response telemetry
+## Brief Overview
+
+- Express.js middleware that captures request/response telemetry
 - Backend service to collect and aggregate metrics
 - Dashboard to visualize latency, errors, and anomalies
 - Automatic anomaly detection using statistical analysis
@@ -12,42 +21,42 @@ A simple observability platform for tracking HTTP requests across your Node.js a
 
 ## Quick start with Docker
 
-**Requirements:** Docker and Docker Compose
+**Requirements:** Docker and Docker Compose (Using Docker Desktop is recommended if you're new to docker)
 
 1. Clone and start everything:
 ```bash
-git clone https://github.com/WesleyZeng206/AutoTrace.git
-cd AutoTrace
+git clone https://github.com/WesleyZeng206/AutoTraceSDK.git
+cd AutoTraceSDK
 docker-compose up -d
 ```
 
-The tech stack includes PostgreSQL, Redis, the ingestion service with Express.js, and the dashboard powered by Next.js.
+The tech stack includes PostgreSQL, Redis, the ingestion service with Express.js and TypeScript, and the dashboard powered by Next.js.
 
 2. Open the dashboard at `http://localhost:3000` and create an account.
 
 3. Create an API key from the dashboard.
 
-## Add to your service
+## Add the key to your service
 
 Install the client:
 ```bash
-npm install @wesleyzeng206/autotrace
+npm install autotracesdk
 ```
 
 Add the middleware to your Express app (example below):
 ```typescript
 import express from 'express';
-import { createAutoTraceMiddleware } from '@wesleyzeng206/autotrace';
+import { createAutoTraceSDKMiddleware } from 'autotracesdk';
 
 const app = express();
 
-app.use(createAutoTraceMiddleware({
+app.use(createAutoTraceSDKMiddleware({
   serviceName: 'my-service',
-  ingestionUrl: 'http://localhost:4000',
+  ingestionUrl: 'http://localhost:4000/telemetry',
   apiKey: 'your-api-key-from-dashboard'
 }));
 
-// your routes below
+// add your routes here
 app.get('/users', (request, response) => {
   response.json({ ... });
 });
@@ -55,15 +64,13 @@ app.get('/users', (request, response) => {
 app.listen(5050);
 ```
 
-Make some requests and check the dashboard. Metrics update in real-time, and aggregations are run hourly.
+Make some requests and check the dashboard. Metrics update in real-time. Aggregations are run hourly.
 
-## The components that running
- npm run build
-  npm login
-  npm publish
+## Running Components
+
 - **Dashboard**: `http://localhost:3000` - Dashboard/Website
-- **Ingestion**: `http://localhost:4000` - API for telemetry
-- **PostgreSQL**: `localhost:5432`
+- **Ingestion**: `http://localhost:4000/telemetry` - API endpoint for telemetry
+- **PostgreSQL**: `localhost:5432` - Database
 - **Redis**: `localhost:6379` - Caching (optional but enabled by default)
 
 ## Configuration
@@ -92,7 +99,7 @@ cd dashboard && npm run build
 
 ## Notes
 
-More documentation is provided in the dashboard frontend.
+More documentation is provided in the dashboard's frontend when you run the application.
 
 ## License
 
